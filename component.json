@@ -1,0 +1,13 @@
+{
+  "name": "EmberShare",
+  "description": "",
+  "keywords": [
+    "promise",
+    "deferred"
+  ],
+  "version": "",
+  "scripts": [
+    "main.js"
+  ],
+  "repo": "organization/thing.js"
+}
