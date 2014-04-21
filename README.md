@@ -1,6 +1,6 @@
 # EmberShare
 
-EmberShare is an Ember persistance library that utilizes ShareJS, a robust Operational Transforms backend server. It takes care of keeping models consistent, in addition to providing collaborative editing capabilities. 
+EmberShare is an Ember persistence library that utilizes ShareJS, a robust Operational Transforms backend server. It takes care of keeping models consistent, in addition to providing collaborative editing capabilities. 
 
 ## Building:
 
