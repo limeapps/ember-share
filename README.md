@@ -39,8 +39,8 @@ grunt test         # headless testing
 ```
 ## Contribution:
 
-+ Have a look at the issues, we posta any challanges/todo items there.
-+ Help us identify short commings via submitting issues.
++ Have a look at the issues, we post any challenges/todo items there.
++ Help us identify shortcomings via submitting issues.
 + We think there is a need for a node module/library to go along with ShareJS in the backend to allow for aspects like Access Control that are needed and are not part of ShareJS.
 
 Dependencies:
