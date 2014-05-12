@@ -1,5 +1,7 @@
-/*global describe, specify, it, assert */
+/*global describe, specify, it, chai */
 import {guid, isArray} from 'ember-share/utils';
+
+var assert = chai.assert;
 
 describe('has guid function', function() {
   it('exists', function(){
@@ -9,6 +11,6 @@ describe('has guid function', function() {
 
 describe('test Array', function() {
   it('can test arrays', function(){
-    assert.ok(isArray([]));
+    assert(isArray([]));
   });
 });

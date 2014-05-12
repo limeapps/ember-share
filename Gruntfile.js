@@ -64,6 +64,7 @@ module.exports = function(grunt) {
   this.registerTask('test', [
     'build',
     'tests',
+    'share',
     'mocha_phantomjs'
   ]);
 

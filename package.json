@@ -7,6 +7,9 @@
     "lib": "lib"
   },
   "devDependencies": {
+    "chai": "^1.9.1",
+    "connect": "^2.15.0",
+    "engine.io": "^1.1.0",
     "grunt": "~0.4.2",
     "grunt-browserify": "~1.2.12",
     "grunt-cli": "~0.1.11",
@@ -16,14 +19,19 @@
     "grunt-contrib-jshint": "~0.8.0",
     "grunt-contrib-uglify": "~0.2.7",
     "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-yuidoc": "~0.5.0",
     "grunt-es6-module-transpiler": "~0.6.0",
     "grunt-mocha-phantomjs": "~0.3.2",
     "grunt-mocha-test": "~0.5.0",
+    "grunt-release-it": "0.0.3",
     "jshint": "~2.4.2",
+    "livedb": "^0.4.1",
+    "livedb-mongo": "^0.3.2",
     "load-grunt-config": "~0.5.0",
     "load-grunt-tasks": "~0.2.0",
-    "grunt-contrib-yuidoc": "~0.5.0",
-    "grunt-release-it": "0.0.3"
+    "mocha": "^1.18.2",
+    "primus": "^2.2.1",
+    "share": "^0.7.0-alpha13"
   },
   "scripts": {
     "lint": "jshint lib",

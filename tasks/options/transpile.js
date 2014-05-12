@@ -44,6 +44,8 @@ module.exports = {
     expand: true,
     src: [
       'test/test_helpers.js',
+      'test/test-resolver.js',
+      'test/isolated-container.js',
       'test/tests.js',
       'test/**/*_test.js'
     ],
