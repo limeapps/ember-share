@@ -4,10 +4,9 @@ import Store from 'ember-share/store';
 import ShareProxy from 'ember-share/models/share-proxy';
 
 describe('Store', function() {
-	this.timeout(5000);
 	var assert = chai.assert;
 	chai.should();
-	var store,container,newId;
+	var store,container,newId,lazyStore;
 	it('exists', function(){
 		assert(Store);
 	});
@@ -41,5 +40,23 @@ describe('Store', function() {
 	});
 	it('can find defined documents',function(){
 		return store.find('document',newId).should.eventually.be.defined;
+	});
+	it('can handle async', function(done){
+		lazyStore = Store.create({
+			url:'http://localhost:9999',
+			container: container,
+			beforeConnect : function(){
+				return new Ember.RSVP.Promise(function(resolve,reject){
+					setTimeout(function() {
+						resolve();
+					}, 40);
+				});
+			}
+		});
+		setTimeout(function() {
+			console.log(lazyStore.connection.state);
+			assert.equal(lazyStore.connection.state,'connected');
+			done();
+		}, 100);
 	});
 });

@@ -17,12 +17,12 @@ module.exports = function(grunt) {
   ]);*/
 
   // Run a server. This is ideal for running the QUnit tests in the browser.
-/*  this.registerTask('server', [
+  this.registerTask('server', [
     'build',
     'tests',
-    'connect',
+    'share',
     'watch:server'
-  ]);*/
+  ]);
 
 
   // Build test files

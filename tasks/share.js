@@ -14,7 +14,7 @@ sharejs = require('share');
 
 module.exports = function(grunt) {
 	grunt.registerTask('share', 'Start a ShareJS server', function() {
-		webserver =  require('http').createServer(connect(connect.static(__dirname + "/dist"), connect.static(sharejs.scriptsDir)));
+		webserver =  require('http').createServer(connect(connect.static(__dirname + "/.."),connect.static(__dirname + "/dist"), connect.static(sharejs.scriptsDir)));
 		webserver.on('error',function(err){
 			console.log(err);
 		});

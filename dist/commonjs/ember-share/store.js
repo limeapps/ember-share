@@ -1,9 +1,11 @@
+"use strict";
 /* global BCSocket:false, sharejs:false */
-import { guid, patchShare } from './utils';
+var guid = require("./utils").guid;
+var patchShare = require("./utils").patchShare;
 
 var Promise = Ember.RSVP.Promise;
 
-export default Ember.Object.extend({
+exports["default"] = Ember.Object.extend({
   socket: null,
   connection: null,
   url : 'http://'+window.location.hostname,
