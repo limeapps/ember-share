@@ -745,11 +745,14 @@ define("ember-share/utils",
     		};
 
     		stream.on('data', function(msg) {
-    			try {
-    				connection.handleMessage(msg);
-    			} catch (e) {
-    				connection.emit('error', e);
-    				throw e;
+    			if(msg.a)
+    			{
+    				try {
+    					connection.handleMessage(msg);
+    				} catch (e) {
+    					connection.emit('error', e);
+    					throw e;
+    				}
     			}
     		});
 
