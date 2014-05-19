@@ -63,6 +63,27 @@ define("ember-share",
     var Store = __dependency4__["default"];
     var Utils = __dependency5__["default"];
 
+    Ember.onLoad('Ember.Application', function(Application) {
+    	Application.initializer({
+    		name: 'ember-share',
+    		initialize : function(container, application){
+    			application.register('store:main', application.Store || StoreStore);
+    			container.lookup('store:main');
+    		}
+    	});
+    	Application.initializer({
+    		name: 'injectStore',
+    		before : 'ember-share',
+    		initialize : function(container, application) {
+    			application.register('model:share-proxy',ShareProxy);
+    			application.register('model:share-array',ShareArray);
+    			application.inject('controller', 'store', 'store:main');
+    			application.inject('route', 'store', 'store:main');
+    		}
+    	});
+    });
+
+
     __exports__.ShareTextMixin = ShareTextMixin;
     __exports__.ShareProxy = ShareProxy;
     __exports__.ShareArray = ShareArray;
@@ -230,7 +251,6 @@ define("ember-share/models/share-array",
       objectAt: function (index) {
         if (this._cache[index] === undefined && this._context.get(index) !== undefined) {
           this._cache[index] = this._factory.create({
-            id : this._context.get(index).id,
             _context: this._context.createContextAt(index)
           });
         }
@@ -388,6 +408,14 @@ define("ember-share/store",
       init: function () {
         this.checkConnection = Ember.Deferred.create({});
         var store = this;
+        this.cache = {};
+        if(!window.sharejs)
+        {
+          throw new Error("ShareJS client not included"); 
+        }
+        if (window.BCSocket === undefined && window.Primus === undefined) {
+          throw new Error("No Socket library included");
+        }
         if ( this.beforeConnect )
         {
           this.beforeConnect()
@@ -402,10 +430,7 @@ define("ember-share/store",
       },
       doConnect : function(){
         var store = this;
-        if(!window.sharejs)
-        {
-          throw new Error("ShareJS client not included"); 
-        }
+        
         if(window.BCSocket)
         {
           this.socket = new BCSocket(this.get('url'), {reconnect: true});
@@ -439,7 +464,7 @@ define("ember-share/store",
           throw new Error("No Socket library included");
         }
         this.connection = new sharejs.Connection(this.socket);
-        this.cache = {};
+        
       }.on('connect'),
       find: function (type, id) {
         var store = this;

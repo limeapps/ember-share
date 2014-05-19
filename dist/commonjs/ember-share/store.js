@@ -12,6 +12,14 @@ exports["default"] = Ember.Object.extend({
   init: function () {
     this.checkConnection = Ember.Deferred.create({});
     var store = this;
+    this.cache = {};
+    if(!window.sharejs)
+    {
+      throw new Error("ShareJS client not included"); 
+    }
+    if (window.BCSocket === undefined && window.Primus === undefined) {
+      throw new Error("No Socket library included");
+    }
     if ( this.beforeConnect )
     {
       this.beforeConnect()
@@ -26,10 +34,7 @@ exports["default"] = Ember.Object.extend({
   },
   doConnect : function(){
     var store = this;
-    if(!window.sharejs)
-    {
-      throw new Error("ShareJS client not included"); 
-    }
+    
     if(window.BCSocket)
     {
       this.socket = new BCSocket(this.get('url'), {reconnect: true});
@@ -63,7 +68,7 @@ exports["default"] = Ember.Object.extend({
       throw new Error("No Socket library included");
     }
     this.connection = new sharejs.Connection(this.socket);
-    this.cache = {};
+    
   }.on('connect'),
   find: function (type, id) {
     var store = this;
