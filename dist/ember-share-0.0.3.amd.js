@@ -12,18 +12,18 @@ define("ember-share",
     	Application.initializer({
     		name: 'ember-share',
     		initialize : function(container, application){
-    			application.register('store:main', application.Store || StoreStore);
-    			container.lookup('store:main');
+    			application.register('ShareStore:main', application.Store || Store);
+    			container.lookup('ShareStore:main');
     		}
     	});
     	Application.initializer({
-    		name: 'injectStore',
+    		name: 'injectStoreS',
     		before : 'ember-share',
     		initialize : function(container, application) {
     			application.register('model:share-proxy',ShareProxy);
     			application.register('model:share-array',ShareArray);
-    			application.inject('controller', 'store', 'store:main');
-    			application.inject('route', 'store', 'store:main');
+    			application.inject('controller', 'ShareStore', 'ShareStore:main');
+    			application.inject('route', 'ShareStore', 'ShareStore:main');
     		}
     	});
     });
@@ -340,7 +340,7 @@ define("ember-share/store",
   ["./utils","exports"],
   function(__dependency1__, __exports__) {
     "use strict";
-    /* global BCSocket:false, sharejs:false */
+    /* global BCSocket:false, sharedb:false */
     var guid = __dependency1__.guid;
     var patchShare = __dependency1__.patchShare;
 
@@ -349,14 +349,15 @@ define("ember-share/store",
     __exports__["default"] = Ember.Object.extend({
       socket: null,
       connection: null,
+      port: 3000,
       url : 'http://'+window.location.hostname,
       init: function () {
         this.checkConnection = Ember.Deferred.create({});
         var store = this;
         this.cache = {};
-        if(!window.sharejs)
+        if(!window.sharedb)
         {
-          throw new Error("ShareJS client not included"); 
+          throw new Error("sharedb client not included");
         }
         if (window.BCSocket === undefined && window.Primus === undefined) {
           throw new Error("No Socket library included");
@@ -365,7 +366,7 @@ define("ember-share/store",
         {
           this.beforeConnect()
           .then(function(){
-            Ember.sendEvent(store,'connect');    
+            Ember.sendEvent(store,'connect');
           });
         }
         else
@@ -373,11 +374,12 @@ define("ember-share/store",
           Ember.sendEvent(this,'connect');
         }
       },
-      doConnect : function(){
+      doConnect : function(options){
         var store = this;
-        
+
         if(window.BCSocket)
         {
+          this.setProperties(options);
           this.socket = new BCSocket(this.get('url'), {reconnect: true});
           this.socket.onerror = function(err){
             Ember.sendEvent(store,'connectionError',[err]);
@@ -393,7 +395,11 @@ define("ember-share/store",
         else if(window.Primus)
         {
           patchShare();
-          this.socket = new Primus(this.get('url'));
+          this.setProperties(options);
+          var hostname = this.get('url');
+          if (this.get("port") !== null)
+            hostname += ':' + this.get('port');
+          this.socket = new Primus(hostname);
           this.socket.on('error', function error(err) {
              Ember.sendEvent(store,'connectionError',[err]);
           });
@@ -408,10 +414,11 @@ define("ember-share/store",
         else {
           throw new Error("No Socket library included");
         }
-        this.connection = new sharejs.Connection(this.socket);
-        
+        this.connection = new sharedb.Connection(this.socket);
+
       }.on('connect'),
       find: function (type, id) {
+        type = type.pluralize()
         var store = this;
         return this.checkConnection
           .then(function(){
@@ -423,6 +430,7 @@ define("ember-share/store",
           });
       },
       createRecord: function (type, data) {
+        type = type.pluralize()
         var store = this;
         return store.checkConnection
           .then(function(){
@@ -441,13 +449,43 @@ define("ember-share/store",
         // TODO: delete and cleanup caches
         // model._context.context._doc.del()
       },
-      findQuery: function (type, query) {
+      findAndSubscribeQuery: function(type, query) {
+        type = type.pluralize()
         var store = this;
         return this.checkConnection
         .then(function(){
           return new Promise(function (resolve, reject) {
             function fetchQueryCallback(err, results, extra) {
-              if (err !== undefined) {
+              if (err !== null) {
+                return reject(err);
+              }
+              resolve(store._resolveModels(type, results));
+            }
+            query = store.connection.createSubscribeQuery(type, query, null, fetchQueryCallback);
+            query.on('insert', function (docs) {
+              console.log('new docs');
+              store._resolveModels(type, docs)
+            });
+            query.on('remove', function (docs) {
+              console.log('remvod docs');
+              for (var i = 0; i < docs.length; i++) {
+                var modelPromise = store._resolveModel(type, docs[i]);
+                modelPromise.then(function (model) {
+                  store.unload(type, model)
+                });
+              }
+            });
+          });
+        });
+      },
+      findQuery: function (type, query) {
+        type = type.pluralize()
+        var store = this;
+        return this.checkConnection
+        .then(function(){
+          return new Promise(function (resolve, reject) {
+            function fetchQueryCallback(err, results, extra) {
+              if (err !== null) {
                 return reject(err);
               }
               resolve(store._resolveModels(type, results));
@@ -456,14 +494,16 @@ define("ember-share/store",
           });
         });
       },
-      findAll: function (type) {
+      findAll: function (type, query) {
+        type = type.pluralize()
         throw new Error('findAll not implemented');
         // TODO this.connection subscribe style query
       },
       _cacheFor: function (type) {
+        type = type.pluralize()
         var cache = this.cache[type];
         if (cache === undefined) {
-          this.cache[type] = cache = {};
+          this.cache[type] = cache = [];
         }
         return cache;
       },
@@ -471,15 +511,19 @@ define("ember-share/store",
         return this.container.lookupFactory('model:'+type);
       },
       _createModel: function (type, doc) {
-        var cache = this._cacheFor(type);
         var modelClass = this._factoryFor(type);
+        type = type.pluralize()
+        var cache = this._cacheFor(type);
         if(modelClass)
         {
           var model = modelClass.create({
-            id: doc.name,
-            _context: doc.createContext().createContextAt()
+            id: doc.id,
+            // content: JSON.parse(JSON.stringify(doc.data)),
+            doc: doc,
+            _type: type,
+            _store: this
           });
-          cache[doc.name] = model;
+          cache.addObject(model);
           return model;
         }
         else
@@ -488,8 +532,10 @@ define("ember-share/store",
         }
       },
       _resolveModel: function (type, doc) {
+        type = type.pluralize()
         var cache = this._cacheFor(type);
-        var model = cache[doc.name];
+        var id = Ember.get(doc, 'id') || Ember.get(doc, '_id');
+        var model = cache.findBy('id', id);
         if (model !== undefined) {
           return Promise.resolve(model);
         }
@@ -499,24 +545,34 @@ define("ember-share/store",
         });
       },
       _resolveModels: function (type, docs) {
+        type = type.pluralize()
         var promises = new Array(docs.length);
         for (var i=0; i<docs.length; i++) {
           promises[i] = this._resolveModel(type, docs[i]);
         }
         return Promise.all(promises);
       },
-      /* returns Promise for when ShareJS doc is ready */
+      /* returns Promise for when sharedb doc is ready */
       whenReady: function(doc) {
         if (doc.state === 'ready') {
           return Promise.resolve(doc);
         }
         return new Promise(function (resolve, reject) {
-          doc.whenReady(function () {
+          doc.on('load', function () {
             Ember.run(null, resolve, doc);
           });
         });
       },
-      /* returns Promise for when ShareJS doc is subscribed */
+      unload: function (type, doc) {
+        type = type.pluralize()
+        var cache = this._cacheFor(type);
+        cache.removeObject(doc)
+      },
+      peekAll: function (type) {
+        type = type.pluralize()
+        return this._cacheFor(type);
+      },
+      /* returns Promise for when sharedb doc is subscribed */
       subscribe: function(doc) {
         if (doc.subscribed) {
           return Promise.resolve(doc);
@@ -531,10 +587,10 @@ define("ember-share/store",
           });
         });
       },
-      /* returns Promise for when ShareJS json0 type doc is created */
+      /* returns Promise for when sharedb json0 type doc is created */
       create: function (doc, data) {
         return new Promise(function (resolve, reject) {
-          doc.create('json0', data, function (err) {
+          doc.create(data, 'json0', function (err) {
             if (err === undefined) {
               Ember.run(null, resolve, doc);
             } else {
@@ -563,14 +619,14 @@ define("ember-share/utils",
     * Copyright (c) 2009-2011, Kevin Decker kpdecker@gmail.com
     *
     * Text diff implementation.
-    * 
+    *
     * This library supports the following APIS:
     * JsDiff.diffChars: Character by character diff
     * JsDiff.diffWords: Word (as defined by \b regex) diff which ignores whitespace
     * JsDiff.diffLines: Line based diff
-    * 
+    *
     * JsDiff.diffCss: Diff targeted at CSS content
-    * 
+    *
     * These methods are based on the implementation proposed in
     * "An O(ND) Difference Algorithm and its Variations" (Myers, 1986).
     * http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.4.6927
@@ -700,8 +756,9 @@ define("ember-share/utils",
 
     	// Override Connection's bindToSocket method with an implementation
     	// that understands Primus Stream.
-    	window.sharejs.Connection.prototype.bindToSocket = function(stream) {
+    	window.sharedb.Connection.prototype.bindToSocket = function(stream) {
     		var connection = this;
+    		this.state = (stream.readyState === 0 || stream.readyState === 1) ? 'connecting' : 'disconnected';
 
     		setState(Primus.OPENING);
     		setState(stream.readyState);
@@ -737,7 +794,7 @@ define("ember-share/utils",
     				connection.canSend = false;
     			}
     		});
-    		
+
     		function setState(readyState) {
     			var shareState = STATES[readyState];
     			connection._setState(shareState);

@@ -1,0 +1,21 @@
+{
+  "name": "ember-share",
+  "description": "Integrate ShareDB 1.00 with Ember",
+  "main": "dist/ember-share.js",
+  "authors": [
+    "Oren Griffin <oren.griffin@gmail.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "ShareDB",
+    "ShareJS"
+  ],
+  "homepage": "https://github.com/Optibus/ember-share",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

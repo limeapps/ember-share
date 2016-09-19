@@ -30,8 +30,8 @@
     "load-grunt-config": "~0.5.0",
     "load-grunt-tasks": "~0.2.0",
     "mocha": "^1.18.2",
-    "primus": "^2.2.1",
-    "share": "^0.7.0-alpha13"
+    "primus": "^6.0.2",
+    "sharedb": "^1.0.0-beta.5"
   },
   "scripts": {
     "lint": "jshint lib",
@@ -39,5 +39,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "browserify": "^13.1.0"
+  }
 }

@@ -1,5 +1,5 @@
 "use strict";
-/* global BCSocket:false, sharejs:false */
+/* global BCSocket:false, sharedb:false */
 var guid = require("./utils").guid;
 var patchShare = require("./utils").patchShare;
 
@@ -8,14 +8,15 @@ var Promise = Ember.RSVP.Promise;
 exports["default"] = Ember.Object.extend({
   socket: null,
   connection: null,
+  port: 3000,
   url : 'http://'+window.location.hostname,
   init: function () {
     this.checkConnection = Ember.Deferred.create({});
     var store = this;
     this.cache = {};
-    if(!window.sharejs)
+    if(!window.sharedb)
     {
-      throw new Error("ShareJS client not included"); 
+      throw new Error("sharedb client not included");
     }
     if (window.BCSocket === undefined && window.Primus === undefined) {
       throw new Error("No Socket library included");
@@ -24,7 +25,7 @@ exports["default"] = Ember.Object.extend({
     {
       this.beforeConnect()
       .then(function(){
-        Ember.sendEvent(store,'connect');    
+        Ember.sendEvent(store,'connect');
       });
     }
     else
@@ -32,11 +33,12 @@ exports["default"] = Ember.Object.extend({
       Ember.sendEvent(this,'connect');
     }
   },
-  doConnect : function(){
+  doConnect : function(options){
     var store = this;
-    
+
     if(window.BCSocket)
     {
+      this.setProperties(options);
       this.socket = new BCSocket(this.get('url'), {reconnect: true});
       this.socket.onerror = function(err){
         Ember.sendEvent(store,'connectionError',[err]);
@@ -52,7 +54,11 @@ exports["default"] = Ember.Object.extend({
     else if(window.Primus)
     {
       patchShare();
-      this.socket = new Primus(this.get('url'));
+      this.setProperties(options);
+      var hostname = this.get('url');
+      if (this.get("port") !== null)
+        hostname += ':' + this.get('port');
+      this.socket = new Primus(hostname);
       this.socket.on('error', function error(err) {
          Ember.sendEvent(store,'connectionError',[err]);
       });
@@ -67,10 +73,11 @@ exports["default"] = Ember.Object.extend({
     else {
       throw new Error("No Socket library included");
     }
-    this.connection = new sharejs.Connection(this.socket);
-    
+    this.connection = new sharedb.Connection(this.socket);
+
   }.on('connect'),
   find: function (type, id) {
+    type = type.pluralize()
     var store = this;
     return this.checkConnection
       .then(function(){
@@ -82,6 +89,7 @@ exports["default"] = Ember.Object.extend({
       });
   },
   createRecord: function (type, data) {
+    type = type.pluralize()
     var store = this;
     return store.checkConnection
       .then(function(){
@@ -100,13 +108,43 @@ exports["default"] = Ember.Object.extend({
     // TODO: delete and cleanup caches
     // model._context.context._doc.del()
   },
-  findQuery: function (type, query) {
+  findAndSubscribeQuery: function(type, query) {
+    type = type.pluralize()
     var store = this;
     return this.checkConnection
     .then(function(){
       return new Promise(function (resolve, reject) {
         function fetchQueryCallback(err, results, extra) {
-          if (err !== undefined) {
+          if (err !== null) {
+            return reject(err);
+          }
+          resolve(store._resolveModels(type, results));
+        }
+        query = store.connection.createSubscribeQuery(type, query, null, fetchQueryCallback);
+        query.on('insert', function (docs) {
+          console.log('new docs');
+          store._resolveModels(type, docs)
+        });
+        query.on('remove', function (docs) {
+          console.log('remvod docs');
+          for (var i = 0; i < docs.length; i++) {
+            var modelPromise = store._resolveModel(type, docs[i]);
+            modelPromise.then(function (model) {
+              store.unload(type, model)
+            });
+          }
+        });
+      });
+    });
+  },
+  findQuery: function (type, query) {
+    type = type.pluralize()
+    var store = this;
+    return this.checkConnection
+    .then(function(){
+      return new Promise(function (resolve, reject) {
+        function fetchQueryCallback(err, results, extra) {
+          if (err !== null) {
             return reject(err);
           }
           resolve(store._resolveModels(type, results));
@@ -115,14 +153,16 @@ exports["default"] = Ember.Object.extend({
       });
     });
   },
-  findAll: function (type) {
+  findAll: function (type, query) {
+    type = type.pluralize()
     throw new Error('findAll not implemented');
     // TODO this.connection subscribe style query
   },
   _cacheFor: function (type) {
+    type = type.pluralize()
     var cache = this.cache[type];
     if (cache === undefined) {
-      this.cache[type] = cache = {};
+      this.cache[type] = cache = [];
     }
     return cache;
   },
@@ -130,15 +170,19 @@ exports["default"] = Ember.Object.extend({
     return this.container.lookupFactory('model:'+type);
   },
   _createModel: function (type, doc) {
-    var cache = this._cacheFor(type);
     var modelClass = this._factoryFor(type);
+    type = type.pluralize()
+    var cache = this._cacheFor(type);
     if(modelClass)
     {
       var model = modelClass.create({
-        id: doc.name,
-        _context: doc.createContext().createContextAt()
+        id: doc.id,
+        // content: JSON.parse(JSON.stringify(doc.data)),
+        doc: doc,
+        _type: type,
+        _store: this
       });
-      cache[doc.name] = model;
+      cache.addObject(model);
       return model;
     }
     else
@@ -147,8 +191,10 @@ exports["default"] = Ember.Object.extend({
     }
   },
   _resolveModel: function (type, doc) {
+    type = type.pluralize()
     var cache = this._cacheFor(type);
-    var model = cache[doc.name];
+    var id = Ember.get(doc, 'id') || Ember.get(doc, '_id');
+    var model = cache.findBy('id', id);
     if (model !== undefined) {
       return Promise.resolve(model);
     }
@@ -158,24 +204,34 @@ exports["default"] = Ember.Object.extend({
     });
   },
   _resolveModels: function (type, docs) {
+    type = type.pluralize()
     var promises = new Array(docs.length);
     for (var i=0; i<docs.length; i++) {
       promises[i] = this._resolveModel(type, docs[i]);
     }
     return Promise.all(promises);
   },
-  /* returns Promise for when ShareJS doc is ready */
+  /* returns Promise for when sharedb doc is ready */
   whenReady: function(doc) {
     if (doc.state === 'ready') {
       return Promise.resolve(doc);
     }
     return new Promise(function (resolve, reject) {
-      doc.whenReady(function () {
+      doc.on('load', function () {
         Ember.run(null, resolve, doc);
       });
     });
   },
-  /* returns Promise for when ShareJS doc is subscribed */
+  unload: function (type, doc) {
+    type = type.pluralize()
+    var cache = this._cacheFor(type);
+    cache.removeObject(doc)
+  },
+  peekAll: function (type) {
+    type = type.pluralize()
+    return this._cacheFor(type);
+  },
+  /* returns Promise for when sharedb doc is subscribed */
   subscribe: function(doc) {
     if (doc.subscribed) {
       return Promise.resolve(doc);
@@ -190,10 +246,10 @@ exports["default"] = Ember.Object.extend({
       });
     });
   },
-  /* returns Promise for when ShareJS json0 type doc is created */
+  /* returns Promise for when sharedb json0 type doc is created */
   create: function (doc, data) {
     return new Promise(function (resolve, reject) {
-      doc.create('json0', data, function (err) {
+      doc.create(data, 'json0', function (err) {
         if (err === undefined) {
           Ember.run(null, resolve, doc);
         } else {

@@ -9,18 +9,18 @@ Ember.onLoad('Ember.Application', function(Application) {
 	Application.initializer({
 		name: 'ember-share',
 		initialize : function(container, application){
-			application.register('store:main', application.Store || StoreStore);
-			container.lookup('store:main');
+			application.register('ShareStore:main', application.Store || Store);
+			container.lookup('ShareStore:main');
 		}
 	});
 	Application.initializer({
-		name: 'injectStore',
+		name: 'injectStoreS',
 		before : 'ember-share',
 		initialize : function(container, application) {
 			application.register('model:share-proxy',ShareProxy);
 			application.register('model:share-array',ShareArray);
-			application.inject('controller', 'store', 'store:main');
-			application.inject('route', 'store', 'store:main');
+			application.inject('controller', 'ShareStore', 'ShareStore:main');
+			application.inject('route', 'ShareStore', 'ShareStore:main');
 		}
 	});
 });
