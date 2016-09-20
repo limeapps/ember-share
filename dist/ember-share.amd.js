@@ -1,12 +1,13 @@
 define("ember-share", 
-  ["ember-share/mixins/share-text","ember-share/models/share-proxy","ember-share/models/share-array","ember-share/store","ember-share/utils","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __exports__) {
+  ["ember-share/mixins/share-text","ember-share/models/share-proxy","ember-share/models/share-array","ember-share/store","ember-share/utils","ember-share/attr","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __exports__) {
     "use strict";
     var ShareTextMixin = __dependency1__["default"];
     var ShareProxy = __dependency2__["default"];
     var ShareArray = __dependency3__["default"];
     var Store = __dependency4__["default"];
     var Utils = __dependency5__["default"];
+    var attr = __dependency6__["default"];
 
     Ember.onLoad('Ember.Application', function(Application) {
     	Application.initializer({
@@ -20,8 +21,8 @@ define("ember-share",
     		name: 'injectStoreS',
     		before : 'ember-share',
     		initialize : function(container, application) {
-    			application.register('model:share-proxy',ShareProxy);
-    			application.register('model:share-array',ShareArray);
+    			// application.register('model:share-proxy',ShareProxy);
+    			// application.register('model:share-array',ShareArray);
     			application.inject('controller', 'ShareStore', 'ShareStore:main');
     			application.inject('route', 'ShareStore', 'ShareStore:main');
     		}
@@ -29,11 +30,74 @@ define("ember-share",
     });
 
 
+    __exports__.attr = attr;
     __exports__.ShareTextMixin = ShareTextMixin;
     __exports__.ShareProxy = ShareProxy;
     __exports__.ShareArray = ShareArray;
     __exports__.Store = Store;
     __exports__.Utils = Utils;
+  });
+define("ember-share/attr", 
+  ["exports"],
+  function(__exports__) {
+    "use strict";
+    __exports__["default"] = function() {
+        var options, type;
+        options = {};
+        type = null;
+        _.forEach(arguments, function(arg) {
+          if (_.isPlainObject(arg)) {
+            return options = arg;
+          } else {
+            if (_.isString(arg)) {
+              return type = null;
+            }
+          }
+        });
+        return Ember.computed({
+          get: function(k) {
+            var ref;
+            return this.get((ref = "doc.data." + k) != null ? ref : Ember.get(options, 'defaultValue'));
+          },
+          set: function(p, oi, isFromServer) {
+            var od;
+            if (type != null) {
+              oi = window[type.toUpperCase(type)](oi);
+            }
+            od = this.get(p);
+            p = p.split('.');
+            this.get('doc').submitOp([
+              {
+                p: p,
+                od: od,
+                oi: oi
+              }
+            ]);
+            return oi;
+          }
+        });
+      }
+
+
+    // attr: ->
+    //   options = {}; type = null
+    //   _.forEach arguments, (arg) ->
+    //     if _.isPlainObject(arg)
+    //       options = arg
+    //     else
+    //       if _.isString arg
+    //         type = null
+    //
+    //   Ember.computed
+    //     get: (k) ->
+    //       @get "doc.data.#{k}" ? Ember.get(options, 'defaultValue')
+    //     set: (p, oi, isFromServer) ->
+    //       if type?
+    //         oi = window[type.toUpperCase type] oi
+    //       od = @get p
+    //       p = p.split '.'
+    //       @get('doc').submitOp [{p,od,oi}]
+    //       oi
   });
 define("ember-share/mixins/share-text", 
   ["../utils","exports"],
@@ -236,104 +300,48 @@ define("ember-share/models/share-proxy",
   ["exports"],
   function(__exports__) {
     "use strict";
-    var isArray = Array.isArray || function (obj) {
-      return obj instanceof Array;
-    };
+    var isOpOnArray = function (op) {
+      return (op.ld != null) || (op.lm != null) || (op.li != null)
+    }
+
+    var extractArrayPath = function (op) {
+      return {
+        idx: _.last(op.p),
+        p: _.slice(op.p, 0, op.p.length - 1).join('.'),
+        addAmt: op.li != null ? 1 : 0,
+        removeAmt: op.ld != null ? 1 : 0
+      }
+    }
 
     __exports__["default"] = Ember.Object.extend({
-      _context: null,
-      _cache: null,
-      init: function () {
-        this._cache = {}; // allows old value to be seen on willChange event
-        var _this = this;
-        this._context.on('replace', function (key, oldValue, newValue) {
-          _this.propertyWillChange(key);
-          _this._cache[key] = _this.wrapObject(key, newValue);
-          _this.propertyDidChange(key);
-        });
-        this._context.on('insert', function (key, value) {
-          _this.propertyWillChange(key);
-          _this._cache[key] = _this.wrapObject(key, value);
-          _this.propertyDidChange(key);
-        });
-        this._context.on('child op', function (key, op) {
-          // handle add operations
-          if(key.length === 1 && op.na)
-          {
-            _this.propertyWillChange(key[0]);
-            _this._cache[key] = (_this._cache[key[0]] || _this.get(key[0]) || 0) + op.na;
-            _this.propertyDidChange(key[0]);
-          }
-        });
+      unload: function() {
+        return this.get('_store').unload(this.get('_type'), this);
       },
-      unknownProperty: function (key) {
-        var value = this._cache[key];
-        if (value === undefined) {
-          value = this._cache[key] = this.wrapObject(key, this._context.get([key]));
-        }
-        return value;
-      },
-      setUnknownProperty: function (key, value) {
-        if (this._cache[key] !== value) {
-          this.propertyWillChange(key);
-          this._cache[key] = this.wrapObject(key, value);
-          this._context.set([key], value);
-          this.propertyDidChange(key);
-        }
-      },
-      wrapObject: function (key, value) {
-        if (value !== null && typeof value === 'object') {
-          var type = this.wrapLookup(key,value);
-          var factory = this.container.lookupFactory('model:'+type);
-          return factory.create({
-            _context: this._context.createContextAt(key)
-          });
-        }
-        return value;
-      },
-      wrapLookup : function(key,value) {
-        return value.type || (isArray(value) ? 'share-array' : 'share-proxy');
-      },
-      willDestroy: function () {
-        this._cache = null;
-        this._context.destroy();
-        this._context = null;
-      },
-      toJSON: function () {
-        return this._context.get();
-      },
-      incrementProperty: function(key, increment) {
-        if (Ember.isNone(increment)) { increment = 1; }
-        Ember.assert("Must pass a numeric value to incrementProperty", (!isNaN(parseFloat(increment)) && isFinite(increment)));
-        this.propertyWillChange(key);
-        this._cache[key] = (this._cache[key] || this.get(key) || 0) + increment;
-        if(this._context.get([key]) !== undefined)
-        {
-          this._context.add([key], increment);
-        }
-        else
-        {
-          this._context.set([key], this._cache[key]);
-        }
-        this.propertyDidChange(key);
-        return this._cache[key];
-      },
-      decrementProperty: function(key, decrement) {
-        if (Ember.isNone(decrement)) { decrement = 1; }
-        Ember.assert("Must pass a numeric value to decrementProperty", (!isNaN(parseFloat(decrement)) && isFinite(decrement)));
-        this.propertyWillChange(key);
-        this._cache[key] = (this._cache[key] || this.get(key) || 0) - decrement;
-        if(this._context.get([key]) !== undefined)
-        {
-          this._context.add([key], -1 * decrement);
-        }
-        else
-        {
-          this._context.set([key], this._cache[key]);
-        }
-        this.propertyDidChange(key);
-        return this._cache[key];
-      },
+      setOpsInit: (function() {
+        var doc;
+        var self = this;
+
+        var beforeAfter = function (didWill) {
+          return function(ops, isFromClient) {
+            if (!isFromClient) {
+              _.forEach(ops, function(op) {
+                if (isOpOnArray(op)) {
+                  var ex = extractArrayPath(op);
+                  self.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
+                }
+                else
+                  self["property" +  didWill +  "Change"](op.p.join('.'));
+              });
+            }
+          };
+        };
+
+        doc = this.get('doc');
+        doc.on('before op', beforeAfter("Will"));
+        doc.on('op',beforeAfter("Did"));
+
+      }).on('init')
+
     });
   });
 define("ember-share/store", 
@@ -452,6 +460,7 @@ define("ember-share/store",
       findAndSubscribeQuery: function(type, query) {
         type = type.pluralize()
         var store = this;
+        store.cache[type] = []
         return this.checkConnection
         .then(function(){
           return new Promise(function (resolve, reject) {
@@ -463,11 +472,9 @@ define("ember-share/store",
             }
             query = store.connection.createSubscribeQuery(type, query, null, fetchQueryCallback);
             query.on('insert', function (docs) {
-              console.log('new docs');
               store._resolveModels(type, docs)
             });
             query.on('remove', function (docs) {
-              console.log('remvod docs');
               for (var i = 0; i < docs.length; i++) {
                 var modelPromise = store._resolveModel(type, docs[i]);
                 modelPromise.then(function (model) {
@@ -481,6 +488,7 @@ define("ember-share/store",
       findQuery: function (type, query) {
         type = type.pluralize()
         var store = this;
+        store.cache[type] = []
         return this.checkConnection
         .then(function(){
           return new Promise(function (resolve, reject) {
@@ -508,7 +516,7 @@ define("ember-share/store",
         return cache;
       },
       _factoryFor: function (type) {
-        return this.container.lookupFactory('model:'+type);
+        return this.container.lookupFactory('model:'+type.singularize());
       },
       _createModel: function (type, doc) {
         var modelClass = this._factoryFor(type);
@@ -532,8 +540,7 @@ define("ember-share/store",
         }
       },
       _resolveModel: function (type, doc) {
-        type = type.pluralize()
-        var cache = this._cacheFor(type);
+        var cache = this._cacheFor(type.pluralize());
         var id = Ember.get(doc, 'id') || Ember.get(doc, '_id');
         var model = cache.findBy('id', id);
         if (model !== undefined) {
@@ -546,11 +553,24 @@ define("ember-share/store",
       },
       _resolveModels: function (type, docs) {
         type = type.pluralize()
+        var store = this;
+        var cache = this._cacheFor(type.pluralize());
         var promises = new Array(docs.length);
+        var idx = cache.length ;
+        store.cache[type].arrayContentWillChange(idx, 0, docs.length - idx);
         for (var i=0; i<docs.length; i++) {
           promises[i] = this._resolveModel(type, docs[i]);
         }
-        return Promise.all(promises);
+        return new Promise(function (resolve, reject) {
+          Promise.all(promises).then(function (){
+            store.cache[type].arrayContentDidChange(idx, 0, docs.length - idx);
+            resolve(store._cacheFor(type))
+          })
+          .catch(function(err){
+            reject(err)
+          })
+        })
+        // return Promise.all(cache);
       },
       /* returns Promise for when sharedb doc is ready */
       whenReady: function(doc) {

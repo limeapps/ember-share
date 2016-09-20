@@ -111,6 +111,7 @@ exports["default"] = Ember.Object.extend({
   findAndSubscribeQuery: function(type, query) {
     type = type.pluralize()
     var store = this;
+    store.cache[type] = []
     return this.checkConnection
     .then(function(){
       return new Promise(function (resolve, reject) {
@@ -122,11 +123,9 @@ exports["default"] = Ember.Object.extend({
         }
         query = store.connection.createSubscribeQuery(type, query, null, fetchQueryCallback);
         query.on('insert', function (docs) {
-          console.log('new docs');
           store._resolveModels(type, docs)
         });
         query.on('remove', function (docs) {
-          console.log('remvod docs');
           for (var i = 0; i < docs.length; i++) {
             var modelPromise = store._resolveModel(type, docs[i]);
             modelPromise.then(function (model) {
@@ -140,6 +139,7 @@ exports["default"] = Ember.Object.extend({
   findQuery: function (type, query) {
     type = type.pluralize()
     var store = this;
+    store.cache[type] = []
     return this.checkConnection
     .then(function(){
       return new Promise(function (resolve, reject) {
@@ -167,7 +167,7 @@ exports["default"] = Ember.Object.extend({
     return cache;
   },
   _factoryFor: function (type) {
-    return this.container.lookupFactory('model:'+type);
+    return this.container.lookupFactory('model:'+type.singularize());
   },
   _createModel: function (type, doc) {
     var modelClass = this._factoryFor(type);
@@ -191,8 +191,7 @@ exports["default"] = Ember.Object.extend({
     }
   },
   _resolveModel: function (type, doc) {
-    type = type.pluralize()
-    var cache = this._cacheFor(type);
+    var cache = this._cacheFor(type.pluralize());
     var id = Ember.get(doc, 'id') || Ember.get(doc, '_id');
     var model = cache.findBy('id', id);
     if (model !== undefined) {
@@ -205,11 +204,24 @@ exports["default"] = Ember.Object.extend({
   },
   _resolveModels: function (type, docs) {
     type = type.pluralize()
+    var store = this;
+    var cache = this._cacheFor(type.pluralize());
     var promises = new Array(docs.length);
+    var idx = cache.length ;
+    store.cache[type].arrayContentWillChange(idx, 0, docs.length - idx);
     for (var i=0; i<docs.length; i++) {
       promises[i] = this._resolveModel(type, docs[i]);
     }
-    return Promise.all(promises);
+    return new Promise(function (resolve, reject) {
+      Promise.all(promises).then(function (){
+        store.cache[type].arrayContentDidChange(idx, 0, docs.length - idx);
+        resolve(store._cacheFor(type))
+      })
+      .catch(function(err){
+        reject(err)
+      })
+    })
+    // return Promise.all(cache);
   },
   /* returns Promise for when sharedb doc is ready */
   whenReady: function(doc) {

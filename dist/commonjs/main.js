@@ -4,6 +4,7 @@ var ShareProxy = require("ember-share/models/share-proxy")["default"];
 var ShareArray = require("ember-share/models/share-array")["default"];
 var Store = require("ember-share/store")["default"];
 var Utils = require("ember-share/utils")["default"];
+var attr = require("ember-share/attr")["default"];
 
 Ember.onLoad('Ember.Application', function(Application) {
 	Application.initializer({
@@ -17,8 +18,8 @@ Ember.onLoad('Ember.Application', function(Application) {
 		name: 'injectStoreS',
 		before : 'ember-share',
 		initialize : function(container, application) {
-			application.register('model:share-proxy',ShareProxy);
-			application.register('model:share-array',ShareArray);
+			// application.register('model:share-proxy',ShareProxy);
+			// application.register('model:share-array',ShareArray);
 			application.inject('controller', 'ShareStore', 'ShareStore:main');
 			application.inject('route', 'ShareStore', 'ShareStore:main');
 		}
@@ -26,6 +27,7 @@ Ember.onLoad('Ember.Application', function(Application) {
 });
 
 
+exports.attr = attr;
 exports.ShareTextMixin = ShareTextMixin;
 exports.ShareProxy = ShareProxy;
 exports.ShareArray = ShareArray;
