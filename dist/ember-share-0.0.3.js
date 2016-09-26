@@ -637,7 +637,7 @@ define("ember-share/store",
         });
       },
       unload: function (type, doc) {
-        type = type.pluralize()
+        type = type.pluralize();
         var cache = this._cacheFor(type);
         cache.removeObject(doc)
       },
