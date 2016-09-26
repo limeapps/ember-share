@@ -100,7 +100,9 @@ exports["default"] = Ember.Object.extend({
           }),
           store.subscribe(doc)
         ]).then(function () {
-          return store._createModel(type, doc);
+          var model = store._createModel(type, doc);
+          store._cacheFor(type).addObject(model);
+          return model
         });
       });
   },
@@ -172,7 +174,6 @@ exports["default"] = Ember.Object.extend({
   _createModel: function (type, doc) {
     var modelClass = this._factoryFor(type);
     type = type.pluralize()
-    var cache = this._cacheFor(type);
     if(modelClass)
     {
       var model = modelClass.create({
@@ -182,7 +183,6 @@ exports["default"] = Ember.Object.extend({
         _type: type,
         _store: this
       });
-      cache.addObject(model);
       return model;
     }
     else
@@ -205,18 +205,15 @@ exports["default"] = Ember.Object.extend({
   _resolveModels: function (type, docs) {
     type = type.pluralize()
     var store = this;
-    var cache = this._cacheFor(type.pluralize());
+    var cache = this._cacheFor(type);
     var promises = new Array(docs.length);
-    var idx = cache.length ;
-    var additionAmt = idx ? docs.length : cache.length ;
-    store.cache[type].arrayContentWillChange(idx, 0, additionAmt);
     for (var i=0; i<docs.length; i++) {
       promises[i] = this._resolveModel(type, docs[i]);
     }
     return new Promise(function (resolve, reject) {
-      Promise.all(promises).then(function (){
-        store.cache[type].arrayContentDidChange(idx, 0, additionAmt);
-        resolve(store._cacheFor(type))
+      Promise.all(promises).then(function (models){
+        cache.addObjects(models);
+        resolve(cache)
       })
       .catch(function(err){
         reject(err)
