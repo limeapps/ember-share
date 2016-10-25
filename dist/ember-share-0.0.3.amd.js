@@ -357,7 +357,8 @@ define("ember-share/store",
     __exports__["default"] = Ember.Object.extend({
       socket: null,
       connection: null,
-      port: 3000,
+      // port: 3000,
+      // url : 'https://qa-e.optibus.co',
       url : 'https://'+window.location.hostname,
       init: function () {
         this.checkConnection = Ember.Deferred.create({});
