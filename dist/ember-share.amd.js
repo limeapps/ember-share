@@ -358,7 +358,7 @@ define("ember-share/store",
       socket: null,
       connection: null,
       port: 3000,
-      url : 'http://'+window.location.hostname,
+      url : 'https://'+window.location.hostname,
       init: function () {
         this.checkConnection = Ember.Deferred.create({});
         var store = this;
