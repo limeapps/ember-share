@@ -9,25 +9,25 @@ define("ember-share",
     var Utils = __dependency5__["default"];
     var attr = __dependency6__["default"];
 
-    Ember.onLoad('Ember.Application', function(Application) {
-    	Application.initializer({
-    		name: 'ember-share',
-    		initialize : function(container, application){
-    			application.register('ShareStore:main', application.Store || Store);
-    			container.lookup('ShareStore:main');
-    		}
-    	});
-    	Application.initializer({
-    		name: 'injectStoreS',
-    		before : 'ember-share',
-    		initialize : function(container, application) {
-    			// application.register('model:share-proxy',ShareProxy);
-    			// application.register('model:share-array',ShareArray);
-    			application.inject('controller', 'ShareStore', 'ShareStore:main');
-    			application.inject('route', 'ShareStore', 'ShareStore:main');
-    		}
-    	});
-    });
+    // Ember.onLoad('Ember.Application', function(Application) {
+    // 	Application.initializer({
+    // 		name: 'ember-share',
+    // 		initialize : function(container, application){
+    // 			application.register('ShareStore:main', application.Store || Store);
+    // 			container.lookup('ShareStore:main');
+    // 		}
+    // 	});
+    // 	Application.initializer({
+    // 		name: 'injectStoreS',
+    // 		before : 'ember-share',
+    // 		initialize : function(container, application) {
+    // 			// application.register('model:share-proxy',ShareProxy);
+    // 			// application.register('model:share-array',ShareArray);
+    // 			application.inject('controller', 'ShareStore', 'ShareStore:main');
+    // 			application.inject('route', 'ShareStore', 'ShareStore:main');
+    // 		}
+    // 	});
+    // });
 
 
     __exports__.attr = attr;
@@ -359,7 +359,7 @@ define("ember-share/store",
       connection: null,
       // port: 3000,
       // url : 'https://qa-e.optibus.co',
-      url : 'https://'+window.location.hostname,
+      url : window.location.hostname,
       init: function () {
         this.checkConnection = Ember.Deferred.create({});
         var store = this;
@@ -406,7 +406,9 @@ define("ember-share/store",
           patchShare();
           this.setProperties(options);
           var hostname = this.get('url');
-          if (this.get("port") !== null)
+          if (this.get('protocol'))
+            hostname = this.get('protocol') + '://' + hostname;
+          if (this.get("port"))
             hostname += ':' + this.get('port');
           this.socket = new Primus(hostname);
           this.socket.on('error', function error(err) {

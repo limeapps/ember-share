@@ -6,25 +6,25 @@ var Store = require("ember-share/store")["default"];
 var Utils = require("ember-share/utils")["default"];
 var attr = require("ember-share/attr")["default"];
 
-Ember.onLoad('Ember.Application', function(Application) {
-	Application.initializer({
-		name: 'ember-share',
-		initialize : function(container, application){
-			application.register('ShareStore:main', application.Store || Store);
-			container.lookup('ShareStore:main');
-		}
-	});
-	Application.initializer({
-		name: 'injectStoreS',
-		before : 'ember-share',
-		initialize : function(container, application) {
-			// application.register('model:share-proxy',ShareProxy);
-			// application.register('model:share-array',ShareArray);
-			application.inject('controller', 'ShareStore', 'ShareStore:main');
-			application.inject('route', 'ShareStore', 'ShareStore:main');
-		}
-	});
-});
+// Ember.onLoad('Ember.Application', function(Application) {
+// 	Application.initializer({
+// 		name: 'ember-share',
+// 		initialize : function(container, application){
+// 			application.register('ShareStore:main', application.Store || Store);
+// 			container.lookup('ShareStore:main');
+// 		}
+// 	});
+// 	Application.initializer({
+// 		name: 'injectStoreS',
+// 		before : 'ember-share',
+// 		initialize : function(container, application) {
+// 			// application.register('model:share-proxy',ShareProxy);
+// 			// application.register('model:share-array',ShareArray);
+// 			application.inject('controller', 'ShareStore', 'ShareStore:main');
+// 			application.inject('route', 'ShareStore', 'ShareStore:main');
+// 		}
+// 	});
+// });
 
 
 exports.attr = attr;

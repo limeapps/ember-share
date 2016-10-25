@@ -10,7 +10,7 @@ exports["default"] = Ember.Object.extend({
   connection: null,
   // port: 3000,
   // url : 'https://qa-e.optibus.co',
-  url : 'https://'+window.location.hostname,
+  url : window.location.hostname,
   init: function () {
     this.checkConnection = Ember.Deferred.create({});
     var store = this;
@@ -57,7 +57,9 @@ exports["default"] = Ember.Object.extend({
       patchShare();
       this.setProperties(options);
       var hostname = this.get('url');
-      if (this.get("port") !== null)
+      if (this.get('protocol'))
+        hostname = this.get('protocol') + '://' + hostname;
+      if (this.get("port"))
         hostname += ':' + this.get('port');
       this.socket = new Primus(hostname);
       this.socket.on('error', function error(err) {
