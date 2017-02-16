@@ -7,38 +7,45 @@
     "lib": "lib"
   },
   "devDependencies": {
+    "body-parser": "^1.15.2",
     "chai": "^1.9.1",
     "connect": "^2.15.0",
     "engine.io": "^1.1.0",
     "grunt": "~0.4.2",
-    "grunt-browserify": "~1.2.12",
+    "grunt-browserify": "5.0.0",
     "grunt-cli": "~0.1.11",
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-concat": "~0.3.0",
     "grunt-contrib-connect": "~0.5.0",
     "grunt-contrib-jshint": "~0.8.0",
     "grunt-contrib-uglify": "~0.2.7",
-    "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-watch": "~1.0.0",
     "grunt-contrib-yuidoc": "~0.5.0",
     "grunt-es6-module-transpiler": "~0.6.0",
-    "grunt-mocha-phantomjs": "~0.3.2",
+    "grunt-include-source": "^1.0.0",
+    "grunt-mocha-phantomjs": "^4.0.0",
     "grunt-mocha-test": "~0.5.0",
     "grunt-release-it": "0.0.3",
     "jshint": "~2.4.2",
     "load-grunt-config": "~0.5.0",
     "load-grunt-tasks": "~0.2.0",
-    "mocha": "^1.18.2",
+    "mocha": "^2.5.0",
+    "ot-json0": "*",
     "primus": "^6.0.2",
-    "sharedb": "^1.0.0-beta.5"
+    "sharedb": "^1.0.0-beta.7"
   },
   "scripts": {
-    "lint": "jshint lib",
-    "prepublish": "grunt build"
+    "test": "grunt phantomTests"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "browserify": "^13.1.0"
+    "browserify": "^13.1.0",
+    "coffee-script": "^1.12.1",
+    "express": "^4.14.0",
+    "grunt-contrib-coffeeify": "^0.1.0",
+    "uglify-js": "^2.7.5",
+    "ws": "^1.1.1"
   }
 }

@@ -8,6 +8,7 @@ var Promise = Ember.RSVP.Promise;
 exports["default"] = Ember.Object.extend({
   socket: null,
   connection: null,
+
   // port: 3000,
   // url : 'https://qa-e.optibus.co',
   url : window.location.hostname,
@@ -92,11 +93,14 @@ exports["default"] = Ember.Object.extend({
       });
   },
   createRecord: function (type, data) {
+    var ref, path;
+    path =  (ref = this._getPathForType(type)) ? ref : type.pluralize()
+    path = this._getPrefix(type) + path;
     type = type.pluralize()
     var store = this;
     return store.checkConnection
       .then(function(){
-        var doc = store.connection.get(type, guid());
+        var doc = store.connection.get(path, data.id == null ? guid() : data.id);
         return Promise.all([
           store.whenReady(doc).then(function (doc) {
             return store.create(doc, data);
@@ -109,9 +113,19 @@ exports["default"] = Ember.Object.extend({
         });
       });
   },
-  deleteRecord : function(model) {
-    // TODO: delete and cleanup caches
-    // model._context.context._doc.del()
+  deleteRecord : function(type, id) {
+    var cache = this._cacheFor(type.pluralize());
+    var model = cache.findBy('id', id);
+    var doc = model.get('doc');
+    return new Promise(function (resolve, reject) {
+      doc.del(function (err) {
+        if (err != null)
+          reject(err)
+        else {
+          resolve()
+        }
+      });
+    })
   },
   findAndSubscribeQuery: function(type, query) {
     type = type.pluralize()
@@ -141,10 +155,25 @@ exports["default"] = Ember.Object.extend({
       });
     });
   },
-  findQuery: function (type, query) {
-    type = type.pluralize()
+  findRecord: function (type, id) {
     var store = this;
-    store.cache[type] = []
+    return new Promise(function (resolve, reject){
+      store.findQuery(type, {_id: id})
+        .then(function(results){
+          resolve(results[0])
+        })
+        .catch(function (err){
+          reject(err)
+        });
+    })
+  },
+  findQuery: function (type, query) {
+    // type = type.pluralize()
+    var ref, path;
+    path =  (ref = this._getPathForType(type)) ? ref : type.pluralize()
+    path = this._getPrefix(type) + path;
+    var store = this;
+    store.cache[type.pluralize()] = []
     return this.checkConnection
     .then(function(){
       return new Promise(function (resolve, reject) {
@@ -154,7 +183,7 @@ exports["default"] = Ember.Object.extend({
           }
           resolve(store._resolveModels(type, results));
         }
-        store.connection.createFetchQuery(type, query, null, fetchQueryCallback);
+        store.connection.createFetchQuery(path, query, null, fetchQueryCallback);
       });
     });
   },
@@ -171,8 +200,23 @@ exports["default"] = Ember.Object.extend({
     }
     return cache;
   },
+  _getPathForType: function (type) {
+    var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
+    if (Adapter)
+      return Adapter.create().pathForType();
+  },
+  _getPrefix: function (type) {
+    var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
+    var prefix;
+    if (Adapter)
+      prefix = Adapter.create().get('prefix');
+    if (!prefix) prefix = '';
+    return prefix
+  },
   _factoryFor: function (type) {
-    return this.container.lookupFactory('model:'+type.singularize());
+    var ref;
+    var modelStr = (ref = this.get('modelStr')) ? ref : 'model-sdb'
+    return this.container.lookupFactory(modelStr + ':'+ type.singularize());
   },
   _createModel: function (type, doc) {
     var modelClass = this._factoryFor(type);
@@ -180,8 +224,6 @@ exports["default"] = Ember.Object.extend({
     if(modelClass)
     {
       var model = modelClass.create({
-        id: doc.id,
-        // content: JSON.parse(JSON.stringify(doc.data)),
         doc: doc,
         _type: type,
         _store: this
@@ -206,9 +248,9 @@ exports["default"] = Ember.Object.extend({
     });
   },
   _resolveModels: function (type, docs) {
-    type = type.pluralize()
+    // type = type.pluralize()
     var store = this;
-    var cache = this._cacheFor(type);
+    var cache = this._cacheFor(type.pluralize());
     var promises = new Array(docs.length);
     for (var i=0; i<docs.length; i++) {
       promises[i] = this._resolveModel(type, docs[i]);
@@ -235,10 +277,31 @@ exports["default"] = Ember.Object.extend({
       });
     });
   },
+  unloadRecord: function (doc) {
+    var cache = this.cache[doc.get("_type")];
+    doc.destroy();
+    cache.removeObject(doc);
+    return this
+  },
   unload: function (type, doc) {
     type = type.pluralize();
     var cache = this._cacheFor(type);
+    doc.destroy()
     cache.removeObject(doc)
+  },
+  unloadAll: function (type) {
+    try
+      {
+        var cache = this.cache[type.pluralize()];
+        for (var i = 0; i < cache.length; i++) {
+          var doc = cache[i];
+          doc.destroy()
+        }
+        cache.removeObjects(cache);
+      }
+    catch (err){
+
+    }
   },
   peekAll: function (type) {
     type = type.pluralize()

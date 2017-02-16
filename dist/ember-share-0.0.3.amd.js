@@ -1,78 +1,99 @@
 define("ember-share", 
-  ["ember-share/mixins/share-text","ember-share/models/share-proxy","ember-share/models/share-array","ember-share/store","ember-share/utils","ember-share/attr","exports"],
+  ["ember-share/mixins/share-text","ember-share/models/model","ember-share/store","ember-share/utils","ember-share/attr","ember-share/belongs-to","exports"],
   function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __exports__) {
     "use strict";
     var ShareTextMixin = __dependency1__["default"];
     var ShareProxy = __dependency2__["default"];
-    var ShareArray = __dependency3__["default"];
-    var Store = __dependency4__["default"];
-    var Utils = __dependency5__["default"];
-    var attr = __dependency6__["default"];
+    var Store = __dependency3__["default"];
+    var Utils = __dependency4__["default"];
+    var attrFunc = __dependency5__["default"];
+    var belongsTo = __dependency6__["default"];
 
-    // Ember.onLoad('Ember.Application', function(Application) {
-    // 	Application.initializer({
-    // 		name: 'ember-share',
-    // 		initialize : function(container, application){
-    // 			application.register('ShareStore:main', application.Store || Store);
-    // 			container.lookup('ShareStore:main');
-    // 		}
-    // 	});
-    // 	Application.initializer({
-    // 		name: 'injectStoreS',
-    // 		before : 'ember-share',
-    // 		initialize : function(container, application) {
-    // 			// application.register('model:share-proxy',ShareProxy);
-    // 			// application.register('model:share-array',ShareArray);
-    // 			application.inject('controller', 'ShareStore', 'ShareStore:main');
-    // 			application.inject('route', 'ShareStore', 'ShareStore:main');
-    // 		}
-    // 	});
-    // });
+    var attr =  attrFunc('_sdbProps')
 
-
-    __exports__.attr = attr;
     __exports__.ShareTextMixin = ShareTextMixin;
     __exports__.ShareProxy = ShareProxy;
-    __exports__.ShareArray = ShareArray;
+    __exports__.belongsTo = belongsTo;
     __exports__.Store = Store;
     __exports__.Utils = Utils;
+    __exports__.attr = attr;
   });
 define("ember-share/attr", 
   ["exports"],
   function(__exports__) {
     "use strict";
-    __exports__["default"] = function() {
-        var options, type;
-        options = {};
-        type = null;
-        _.forEach(arguments, function(arg) {
-          if (_.isPlainObject(arg)) {
-            return options = arg;
-          } else {
-            if (_.isString(arg)) {
-              return type = null;
-            }
-          }
-        });
+    __exports__["default"] = function(sdbProps) {
+    	return function() {
+    		var options,
+    			type;
+    		options = {};
+    		type = null;
+    		_.forEach(arguments, function(arg) {
+    			if (_.isPlainObject(arg)) {
+    				return options = arg;
+    			} else {
+    				if (_.isString(arg)) {
+    					return type = null;
+    				}
+    			}
+    		});
+    		return Ember.computed({
+    			get: function(k) {
+    				this.get(sdbProps, true).addObject(k);
+    				// return this.get(k, true);
+    				var isSpecielKey = _.includes([
+    					'_isSDB',
+    					'_sdbProps',
+    					'_subProps',
+    					'doc',
+    					'_prefix',
+    					'content',
+    					'_idx',
+    					'_root'
+    				], k);
+
+    				if (isSpecielKey || this._fullPath == null)
+    					return this._get(k, true)
+    				else
+    					return this._get(this._fullPath(k))
+
+    			},
+    			set: function(k, v, isFromServer) {
+    				// return this._super(p, oi)
+    				var path = (k == null) ? this.get('_prefix') : ((k == '_idx' || !this._fullPath)  ? k : this._fullPath(k));
+    				return this._set(path, v)
+
+    			}
+    		});
+    	}
+    }
+  });
+define("ember-share/belongs-to", 
+  ["exports"],
+  function(__exports__) {
+    "use strict";
+    __exports__["default"] = function(DS, modelName) {
+        // var options, type;
+        // options = {};
+        // type = null;
+        // _.forEach(arguments, function(arg) {
+        //   if (_.isPlainObject(arg)) {
+        //     return options = arg;
+        //   } else {
+        //     if (_.isString(arg)) {
+        //       return type = null;
+        //     }
+        //   }
+        // });
+        var store = this.originalStore;
         return Ember.computed({
           get: function(k) {
             var ref;
-            return this.get((ref = "doc.data." + k) != null ? ref : Ember.get(options, 'defaultValue'));
+
+            return store.findRecord(modelName, this.get(ref = "doc.data." + k));
+            // return  != null ? ref : Ember.get(options, 'defaultValue'));
           },
           set: function(p, oi, isFromServer) {
-            var od;
-            if (type != null) {
-              oi = window[type.toUpperCase(type)](oi);
-            }
-            od = this.get(p);
-            p = p.split('.');
-            this.get('doc').submitOp([
-              {
-                p: p,
-                od: od,
-                oi: oi
-              }
-            ]);
             return oi;
           }
         });
@@ -211,138 +232,813 @@ define("ember-share/mixins/share-text",
     	}
     });
   });
-define("ember-share/models/share-array", 
-  ["./share-proxy","exports"],
-  function(__dependency1__, __exports__) {
+define("ember-share/models/base", 
+  ["./use-subs-mixin","./sub-mixin","./sub-array","./subs-handler","./utils","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __exports__) {
     "use strict";
-    var ShareProxy = __dependency1__["default"];
+    var UseSubsMixin = __dependency1__["default"];
+    var SubMixin = __dependency2__["default"];
+    var SDBSubArray = __dependency3__["default"];
+    var subs = __dependency4__["default"];
+    var Utils = __dependency5__["default"];
 
-    __exports__["default"] = Ember.Object.extend(Ember.MutableArray, {
-      _context: null,
-      _cache: null,
-      itemType: 'share-proxy',
-      init: function () {
-        this._cache = []; // cache wrapped objects
-        this._factory = this.container.lookupFactory('model:'+this.itemType);
-        // TODO subscribe to array ops on context
-        var _this = this;
-        this._context.on('delete', function (index, removed) {
-          _this.arrayContentWillChange(index, 1, 0);
+    var toJson = function(obj) {
+    	return (obj == null)
+    		? void 0
+    		: JSON.parse(JSON.stringify(obj));
+    };
 
-          _this._cache.splice(index, 1);
+    var getPlainObject = function (value) {
+    	if (value != null && !((typeof value == 'string') || (typeof value == 'number')))
+    		if (typeof value.toJson == 'function')
+    			return value.toJson()
+    		else
+    			return toJson(value)
+    	else {
+    		return value
+    	}
+    }
 
-          // update paths
-          var depth = _this._context.path.length;
-          _this._cache.forEach(function(item,idx){
-            item._context.path[depth]= idx;
-          })
-          _this.arrayContentDidChange(index, 1, 0);
-        });
-        this._context.on('insert', function (index, value) {
-          _this.arrayContentWillChange(index, 0, 1);
+    //
+    //   ShareDb Base Class
+    //
+    //        Root and all subs (currently not arrays) inherit from base.
+    //
+    //
 
-          var model = _this._factory.create({
-            _context: _this._context.createContextAt(index)
-          });
+    var GetterSettersMixin = Ember.Mixin.create({
 
-          _this._cache.splice(index, 0, model);
-          // update paths
-          var depth = _this._context.path.length;
-          _this._cache.forEach(function(item,idx){
-            item._context.path[depth]= idx;
-          });
-          _this.arrayContentDidChange(index, 0, 1);
-        });
-      },
-      length: function () {
-        return this._context.get().length;
-      }.property().volatile(),
-      objectAt: function (index) {
-        if (this._cache[index] === undefined && this._context.get(index) !== undefined) {
-          this._cache[index] = this._factory.create({
-            _context: this._context.createContextAt(index)
-          });
-        }
-        return this._cache[index];
-      },
-      replace: function (index, length, objects) {
-        var objectsLength = objects.length;
-        var args = new Array(objectsLength+2);
-        var model;
-        args[0] = index;
-        args[1] = length;
+    	_get: function(k, selfCall) {
+    		var firstValue = _.first(k.split('.'));
 
-        this.arrayContentWillChange(index, length, objectsLength);
+    		if (k != '_sdbProps' && _.includes(this.get('_sdbProps'), firstValue)) {
+    			var content = this.get("doc.data." + k);
+    			return this.useSubs(content, k)
+    		} else {
+    			return this.get(k);
+    		}
+    	},
 
-        if (length > 0) {
-          this._context.remove([index], length);
-        }
+    	_set: function(path, oi) {
+    		var firstValue = _.first(path.split('.'));
+    		var self = this;
 
-        for (var i=0; i<objectsLength; i++) {
-          this._context.insert([index+i], objects[i]);
+    		if (Ember.get(this, '_prefix') == null)
+    			this.get(firstValue);
 
-          args[2+i] = this._factory.create({
-            id : objects[i].id,
-            _context: this._context.createContextAt(index+i)
-          });
-        }
+    		if (path != '_sdbProps' && _.includes(this.get('_sdbProps'), firstValue)) {
+    			var od = getPlainObject(this._get(path));
+    			oi = getPlainObject(oi);
+    			var p = path.split('.');
+    			var utils = Utils(this);
+    			utils.removeChildren(path);
+    			var op = {
+    				p: p,
+    				od: od,
+    				oi: oi
+    			};
 
-        this._cache.splice.apply(this._cache, args);
+    			if (od == null)
+    				delete op.od;
 
-        this.arrayContentDidChange(index, length, objectsLength);
-      },
-      toJSON: function () {
-        return this._context.get();
-      },
+    			if (op.oi != op.od) {
+    				this.get('doc').submitOp([op], function(err) {
+    					self.get('_root', true).trigger('submitted', err);
+    				});
+    			}
+
+    			return this.useSubs(oi,path);
+    		} else {
+    			return this.set(path, oi, true)
+
+    		}
+    	}
+
     });
+    var SDBBase = Ember.Object.extend(Ember.Evented, GetterSettersMixin, {
+
+    	_isSDB: true,
+
+    	notifyProperties: function notifyProperties(props) {
+    		var self = this;
+    		_.forEach(props, function(prop) {
+    			self.notifyPropertyChange(prop)
+    		})
+    		return this
+    	},
+
+    	notifyDidProperties: function notifyDidProperties(props) {
+    		var self = this;
+    		_.forEach(props, function(prop) {
+    			self.propertyDidChange(prop)
+    		})
+    		return this
+    	},
+
+    	notifyWillProperties: function notifyWillProperties(props) {
+    		var self = this;
+    		_.forEach(props, function(prop) {
+    			self.propertyWillChange(prop)
+    		})
+    		return this
+    	},
+
+    	deleteProperty: function deleteProperty(k) {
+    		var doc = this.get('doc');
+    		var p = k.split('.');
+    		var od = this.get(k);
+    		doc.submitOp([
+    			{
+    				p: p,
+    				od: od
+    			}
+    		]);
+    	},
+
+    	setProperties: function setProperties(obj) {
+    		var sdbProps = this.get('_sdbProps');
+    		var self = this;
+    		var SDBpropsFromObj = _.filter(_.keys(obj), function(key) {
+    			self.get(key);
+    			return _.includes(sdbProps, key)
+    		});
+    		var nonSDB = _.reject(_.keys(obj), function(key) {
+    			return _.includes(sdbProps, key)
+    		});
+    		this._super(_.pick(obj, nonSDB));
+    		_.forEach(SDBpropsFromObj, function(key) {
+    			self.set(key, obj[key])
+    		});
+    	}
+    });
+
+    SDBBase = SDBBase.extend(UseSubsMixin);
+    subs.object = SDBBase.extend(SubMixin);
+    subs.array = SDBSubArray(SubMixin, GetterSettersMixin).extend(UseSubsMixin);
+
+    __exports__["default"] = SDBBase
   });
-define("ember-share/models/share-proxy", 
+define("ember-share/models/model", 
+  ["./utils","./base","exports"],
+  function(__dependency1__, __dependency2__, __exports__) {
+    "use strict";
+    var Utils = __dependency1__["default"];
+    var SDBBase = __dependency2__["default"];
+
+    //
+    //   ShareDb Ember Model Class
+    //
+    //        extends Base.
+    //        this is model has a recursive structure, getting an inner object or array will return
+    //        a sub object which is conencted to its parent.
+    //        an over view of the entire structure can be found here:
+    //        https://www.gliffy.com/go/share/sn1ehtp86ywtwlvhsxid
+    //
+    //
+
+    var SDBRoot = SDBBase.extend({
+    	unload: function() {
+    		return this.get('_store').unload(this.get('_type'), this);
+    	},
+
+    	id: Ember.computed.oneWay('doc.id'),
+
+    	_childLimiations: (function() {
+    		return []
+    	}).property(),
+
+    	_root: (function() {
+    		return this
+    	}).property(),
+
+    	_children: (function() {
+    		return {}
+    	}).property(),
+
+    	_sdbProps: (function () {
+    		return []
+    	}).property(),
+
+    	setOpsInit: (function() {
+    		var doc = this.get('doc', true);
+    		var utils = Utils(this);
+
+    		doc.on('before op', utils.beforeAfter("Will"));
+    		doc.on('op', utils.beforeAfter("Did"));
+
+    	}).observes('doc').on('init')
+    });
+
+    // var set = Ember.Object.prototype.set;
+    // var get = Ember.Object.prototype.get;
+    //
+    // Ember.Object.prototype.get = function (key, selfCall) {
+    //   var firstValue = _.first(key.split('.'));
+    //   var secondValue = key.split('.')[1]
+    //   if (!selfCall &&
+    //       Ember.get(this, 'content._isSDB', true) &&
+    //       ((firstValue != 'content' && Ember.get(this, 'content.' + firstValue) != null) ||
+    //       (firstValue == 'content' && secondValue != null)
+    //     )
+    //   ) {
+    //     var content = Ember.get(this, 'content');
+    //     if (firstValue == 'content') key = key.split('.').slice(1).join('.');
+    //     return content.get(key)
+    //   }
+    //   else
+    //   // if ((key != '_sdbProps') && (key != 'doc')console.log(key);
+    //     return get.call(this, key)
+    // };
+    //
+    // Ember.Object.prototype.set = function(key, value, selfCall) {
+    // 	var firstValue = _.first(key.split('.'));
+    // 	var secondValue = key.split('.')[1]
+    // 	if (!selfCall && this.get('content._isSDB') && ((firstValue != 'content' && this.get('content.' + firstValue) != null) || (firstValue == 'content' && secondValue != null))) {
+    // 		var content = this.get('content');
+    // 		if (firstValue == 'content')
+    // 			key = key.split('.').slice(1).join('.');
+    // 		return content.set(key, value)
+    // 	} else
+    // 		return set.call(this, key, value)
+    // };
+
+    __exports__["default"] = SDBRoot
+  });
+define("ember-share/models/sub-array", 
+  ["./sub-mixin","./base","exports"],
+  function(__dependency1__, __dependency2__, __exports__) {
+    "use strict";
+    var SubMixin = __dependency1__["default"];
+    var SDBBase = __dependency2__["default"];
+
+    var allButLast = function(arr) {
+    	return arr.slice(0, arr.length - 1)
+    };
+
+    //
+    //   Sub Array Class
+    //
+    //        this is An Ember Array Proxy, uses sub mixin and 'Use Sub Mixin'
+    //
+    //
+
+    __exports__["default"] = function(SubMixin, GetterSettersMixin) {
+    	return Ember.ArrayProxy.extend(Ember.Evented, SubMixin, GetterSettersMixin, {
+
+    		_isArrayProxy: true,
+
+    		arrayContentDidChange: function(startIdx, removeAmt, addAmt) {
+    			var _removeAmt = (removeAmt == null)
+    				? 0
+    				: removeAmt * -1;
+    			if (!!(_removeAmt + (addAmt == null)
+    				? 0
+    				: addAmt))
+    				Ember.get(this, 'content').propertyDidChange('lastObject');
+    			return this._super.apply(this, arguments)
+    		},
+
+    		arrayContentWillChange: function(startIdx, removeAmt, addAmt) {
+    			var children = Ember.get(this, '_children');
+    			var childrenKeys = Object.keys(children);
+    			var prefix = Ember.get(this, '_prefix');
+    			var self = this;
+    			var replaceLastIdx = function(str, idx) {
+    				var arr = allButLast(str.split('.'))
+    				return arr.join('.') + '.' + idx
+    			}
+    			var _removeAmt = (removeAmt == null) ? 0 : removeAmt * -1;
+    			addAmt = (addAmt == null) ? 0 : addAmt;
+    			if (!!(_removeAmt + addAmt))
+    				Ember.get(this, 'content').propertyWillChange('lastObject');
+    			childrenKeys = _.reduce(childrenKeys, function(result, key) {
+    				if (allButLast(key.split('.')).join('.') == prefix)
+    					result.push(key);
+    				return result
+    			}, []);
+    			_.forEach(childrenKeys, function(childKey) {
+    				var idx = +_.last(childKey);
+    				if (!isNaN(idx))
+    					if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
+    						var newIdx = idx + _removeAmt + addAmt;
+    						var child = children[childKey];
+    						delete children[childKey];
+    						var tempChild = {};
+    						tempChild[replaceLastIdx(childKey, newIdx)] = child
+    						_.assign(children, tempChild);
+    						Ember.set(child, '_idx', newIdx);
+    					};
+    			});
+    			return this._super.apply(this, arguments)
+    		},
+
+    		// useSubs:
+
+    		replaceContent: function(content, noSet) {
+    			var removeAmt,
+    				addAmt,
+    				prefix = Ember.get(this, '_prefix');
+
+    			var children = Ember.get(this, '_children');
+    			_.forEach(this.toArray(), function(value, index) {
+    				var child = children[prefix + '.' + index];
+    				if (child != null)
+    					if (content[index] != null)
+    						child.replaceContent(content[index], true)
+    					else {
+    						delete children[prefix + '.' + index]
+    						child.destroy()
+    					}
+    			});
+
+    			if (!noSet)
+    				this._set(prefix, content);
+
+    			Ember.set(this, 'content', content);
+    			return this
+    		},
+
+    		_submitOp: function(p, li, ld) {
+    			var path = this.get('_prefix').split('.');
+    			var op = {
+    				p: path.concat(p)
+    			};
+
+    			if (li != null)
+    				op.li = li;
+
+    			if (ld != null)
+    				op.ld = ld;
+
+    			if (li != null || ld != null)
+    				return this.get('doc').submitOp([op]);
+    		},
+
+    		objectAt: function(idx) {
+    			var content = this._super(idx);
+    			var prefix = this.get('_prefix');
+    			return this.useSubs(content, prefix, idx)
+    		},
+
+    		toJson: function() {
+    			var self = this;
+    			return _.map(this.toArray(), function(value) {
+    				if ((typeof value == 'string') || (typeof value == 'number'))
+    					return value
+    				else
+    					return value.toJson()
+    			})
+    		},
+
+    		_replace: function(start, len, objects) {
+    			this.arrayContentWillChange(start, len, objects.length);
+    			var iterationLength = (len > objects.length)
+    				? len
+    				: objects.length;
+    			for (var i = 0; i < iterationLength; i++) {
+    				var newIndex = i + start;
+    				var obj = objects.objectAt(i);
+    				this._submitOp(newIndex, obj, (len > i
+    					? this.objectAt(newIndex)
+    					: null))
+    			}
+    			this.arrayContentDidChange(start, len, objects.length);
+    			return this //._super(start, len, objects)
+    		}
+    	});
+    }
+  });
+define("ember-share/models/sub-mixin", 
+  ["./utils","../attr","exports"],
+  function(__dependency1__, __dependency2__, __exports__) {
+    "use strict";
+    var Utils = __dependency1__["default"];
+    var attrs = __dependency2__["default"];
+
+    var allButLast = function(arr) {
+    	return arr.slice(0, arr.length - 1)
+    };
+
+    //
+    //   Sub Mixin
+    //
+    //        All subs use this mixin (Object and Array)
+    //
+    //
+
+    __exports__["default"] = Ember.Mixin.create({
+
+    	_children: (function() {
+    		return {}
+    	}).property(),
+
+    	_sdbProps: (function() {
+    		return []
+    	}).property(),
+
+    	_subProps: (function() {
+    		return []
+    	}).property(),
+
+    	createInnerAttrs: (function() {
+    		var tempContent = Ember.get(this, 'tempContent');
+    		var self = this;
+    		var attr = attrs('_subProps');
+    		var keys = [];
+
+    		_.forEach(tempContent, function(value, key) {
+    			keys.push(key);
+    			Ember.defineProperty(self, key, attr());
+    		})
+
+    		Ember.get(this, '_subProps').addObjects(keys);
+    		delete this['tempContent'];
+    	}).on('init'),
+
+    	activateListeners: (function() {
+    		var utils = Utils(this);
+    		var doc = this.get('doc');
+
+    		this.on('before op', utils.beforeAfterChild("Will"));
+    		this.on('op', utils.beforeAfterChild("Did"));
+
+    	}).on('init'),
+
+    	_fullPath: function(path) {
+    		var prefix = Ember.get(this, '_prefix');
+    		var idx = Ember.get(this, '_idx');
+
+    		if (prefix) {
+    			if (idx != null) {
+    				return prefix + '.' + idx + '.' + path
+    			} else {
+    				return prefix + '.' + path;
+    			}
+    		} else
+    			return path;
+    		}
+    	,
+
+    	deleteProperty: function(k) {
+    		this.removeKey(k);
+    		return this._super(this._fullPath(k))
+    	},
+
+    	replaceContent: function(content, noSet) {
+    		this.notifyWillProperties(Object.keys(content));
+    		var prefix = this.get('_prefix');
+    		var idx = this.get('_idx')
+    		var path = (idx == null) ? prefix : prefix + '.' + idx
+
+    		if (!noSet)
+    			this._set(path, content);
+
+    		var self = this;
+    		var utils = Utils(this);
+
+    		utils.removeChildren(path);
+
+    		var toDelete = _.difference(Object.keys(this), Object.keys(content));
+
+    		_.forEach(toDelete, function(prop) {
+    			delete self[prop]
+    		});
+
+    		Ember.setProperties(this, {tempContent: content});
+    		this.createInnerAttrs();
+    		this.notifyDidProperties(Object.keys(content));
+
+    		return this
+    	},
+
+    	toJson: function() {
+    		var idx = Ember.get(this, '_idx'),
+    			k = Ember.get(this, '_prefix');
+    		var path = (idx == null)
+    			? k
+    			: (k + '.' + idx);
+    		return this.get('doc.data.' + path);
+    	},
+
+    	addKey: function (key) {
+    		var attr = attrs('_subProps');
+    		if (!(this.get('_subProps').indexOf(key) > -1))
+    			Ember.defineProperty(this, key, attr());
+    		return this
+    	},
+
+    	removeKey: function (key) {
+    		var attr = attrs('_subProps');
+    		var utils = Utils(this);
+    		utils.removeChildren(key);
+    		this.get('_subProps').removeObject(key);
+    		delete this[key];
+    		return this
+    	}
+
+    	// set: function (path) {
+    	// 	debugger
+    	// 	if (!path.match('.') && this.get('_subProps'))
+    	// 		console.log('d');
+    	// },
+    	// get: function (key) {
+    	// 	debugger
+    	// }
+
+    })
+  });
+define("ember-share/models/subs-handler", 
   ["exports"],
   function(__exports__) {
     "use strict";
-    var isOpOnArray = function (op) {
-      return (op.ld != null) || (op.lm != null) || (op.li != null)
+    //
+    //   Subs Handler
+    //
+    //        since we have a recursive model structure there is a need for
+    //        creating the subs in a common place and then reuse it in its own class.
+    //
+    //
+
+    __exports__["default"] = {
+        object : {},
+        array : {}
     }
+  });
+define("ember-share/models/use-subs-mixin", 
+  ["./subs-handler","./utils","exports"],
+  function(__dependency1__, __dependency2__, __exports__) {
+    "use strict";
+    var subs = __dependency1__["default"];
+    var Utils = __dependency2__["default"];__exports__["default"] = Ember.Mixin.create({
 
-    var extractArrayPath = function (op) {
-      return {
-        idx: _.last(op.p),
-        p: _.slice(op.p, 0, op.p.length - 1).join('.'),
-        addAmt: op.li != null ? 1 : 0,
-        removeAmt: op.ld != null ? 1 : 0
-      }
+    	useSubs: function useSubs(content, k, idx) {
+    		var utils = Utils(this);
+
+    		if (utils.prefixToChildLimiations(k))
+    			return content;
+
+    		if (_.isPlainObject(content)) {
+    			content = {
+    				tempContent: content
+    			};
+    			var use = 'object'
+
+    		} else if (_.isArray(content)) {
+    			content = {
+    				content: content
+    			};
+    			var use = 'array';
+    		}
+    		if (use) {
+    			var child,
+    				_idx;
+    			var path = (idx == null) ? k : (k + '.' + idx);
+    			var ownPath = Ember.get(this, '_prefix');
+    			if ((_idx = Ember.get(this, '_idx')) != null)
+    				ownPath += '.' + _idx;
+    			if (path == ownPath) {
+    				return this;
+    			}
+
+    			var children = Ember.get(this, '_children');
+    			var childrenKeys = Object.keys(children);
+
+    			if (_.includes(childrenKeys, path))
+    				return children[path]
+    			else
+    				child = {};
+
+    			var sub = subs[use].extend({
+    				doc: this.get('doc'),
+    				_children: Ember.get(this, '_children'),
+    				_prefix: k,
+    				_idx: idx,
+    				_sdbProps: Ember.get(this, '_sdbProps'),
+    				_root: Ember.get(this,'_root')
+    			});
+
+    			sub = sub.create(content);
+
+    			child[path] = sub;
+    			_.assign(Ember.get(this, '_children'), child);
+
+    			return sub
+    		} else
+    			return content
+    	}
+    })
+  });
+define("ember-share/models/utils", 
+  ["exports"],
+  function(__exports__) {
+    "use strict";
+    __exports__["default"] = function(context) {
+
+    	return {
+
+    		isOpOnArray: function(op) {
+    			return (op.ld != null) || (op.lm != null) || (op.li != null)
+    		},
+
+    		matchingPaths: function(as, bs) {
+    			var counter = 0;
+    			var higherLength = (as.length > bs.length)
+    				? as.length
+    				: bs.length
+    			while ((as[counter] == '*' || as[counter] == bs[counter]) && counter < higherLength) {
+    				counter++
+    			}
+    			return counter - (as.length / 1000)
+    		},
+
+    		prefixToChildLimiations: function (key) {
+    			var childLimiations = Ember.get(context, '_root._childLimiations');
+    			var prefix = Ember.get(context, '_prefix')
+
+    			if (prefix == null || key.match(prefix))
+    				prefix = key
+    			else
+    				prefix += '.' + key
+
+    			prefix = prefix.split('.');
+    			var self = this;
+    			return _.some (childLimiations, function (_limit) {
+    				var limit = _limit.split('/');
+    				return prefix.length == limit.length && Math.ceil(self.matchingPaths(limit, prefix)) == prefix.length
+    			})
+    		},
+
+    		removeChildren: function (path) {
+    			var children = Ember.get(context, '_children');
+    			var childrenKeys = Object.keys(children);
+    			var utils = this;
+
+    			childrenKeys = _.reduce(childrenKeys, function(result, key) {
+    				var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
+    				if (matches >= path.split('.').length)
+    					result.push(key);
+    				return result
+    			}, []);
+
+    			_.forEach (childrenKeys, function (key) {
+    				children[key].destroy()
+    				delete children[key]
+    			})
+    		},
+
+    		comparePathToPrefix: function(path, prefix) {
+    			return Boolean(this.matchingPaths(path.split('.'), prefix.split('.')))
+    		},
+
+    		cutLast: function(path, op) {
+    			var tempPath;
+    			if (this.isOpOnArray(op) && !isNaN(+ _.last(path))) {
+    				tempPath = _.clone(path);
+    				tempPath.pop();
+    			}
+    			return (tempPath)
+    				? tempPath
+    				: path
+    		},
+
+    		comparePathToChildren: function(path, op) {
+    			var utils = this;
+    			var children = Ember.get(context, '_children');
+    			var childrenKeys = Object.keys(children);
+    			var hasChildren = _.some(childrenKeys, function(childKey) {
+    				var pathsCounter = utils.matchingPaths(childKey.split('.'), utils.cutLast(path, op))
+    				return Math.ceil(pathsCounter) == childKey.split('.').length
+    			});
+    			return !Ember.isEmpty(childrenKeys) && hasChildren
+    		},
+
+    		triggerChildren: function(didWill, op, isFromClient) {
+    			var newP = _.clone(op.p);
+    			var children = Ember.get(context, '_children');
+    			var childrenKeys = Object.keys(children);
+    			if (Ember.isEmpty(childrenKeys))
+    				return;
+    			var child,
+    				utils = this;
+    			var counterToChild = _.mapKeys(children, function(v, childKey) {
+    				if (utils.isOpOnArray(op) && !isNaN(+ _.last(childKey.split('.'))))
+    					return 0
+    				else
+    					return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), op.p)
+    			});
+    			var toNumber = function(strings) {
+    				return _.map(strings, function(s) {
+    					return + s
+    				})
+    			};
+    			var chosenChild = counterToChild[_.max(toNumber(Object.keys(counterToChild)))]
+    			if (didWill == 'Will')
+    				chosenChild.trigger('before op', [op], isFromClient);
+    			if (didWill == 'Did')
+    				chosenChild.trigger('op', [op], isFromClient);
+    			}
+    		,
+
+    		beforeAfter: function(didWill) {
+    			var utils = this;
+    			var ex;
+    			return function(ops, isFromClient) {
+    				if (!isFromClient) {
+    					_.forEach(ops, function(op) {
+    						// if (didWill == 'Did')
+    						// console.log(Ember.get(context,'_prefix') + ' recieved log');
+    						if (utils.comparePathToChildren(op.p, op)) {
+    							utils.triggerChildren(didWill, op, isFromClient);
+    						} else {
+    							if (utils.isOpOnArray(op)) {
+    								ex = utils.extractArrayPath(op);
+
+    								// console.log(Ember.get(context,'_prefix') + ' perform log');
+    								// console.log('op came to parent');
+    								context.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
+    							} else {
+    								context["property" + didWill + "Change"](op.p.join('.'));
+    							}
+    						}
+    					});
+    				}
+    			};
+    		},
+
+    		beforeAfterChild: function(didWill) {
+    			var utils = this;
+    			var ex,
+    				prefix,
+    				_idx;
+    			return function(ops, isFromClient) {
+    				if (((_idx = Ember.get(context, '_idx')) != null) || !isFromClient) {
+    					_.forEach(ops, function(op) {
+
+    						if (op.p.join('.') == (prefix = Ember.get(context, '_prefix')) && didWill == 'Did') {
+    							if  (op.oi != null) {
+    								context.replaceContent(op.oi, true)
+    							} else {
+    								if (op.od != null) {
+    									prefix = prefix.split('.');
+    									var key = prefix.pop();
+    									var father;
+    									if (father = context.get('_children.' + prefix.join('.')))
+    										father.removeKey(key);
+    								}
+    							}
+    						} else {
+    							var path = (_idx == null)
+    								? prefix.split('.')
+    								: prefix.split('.').concat(String(_idx));
+    							var newP = _.difference(op.p, path);
+    							if (utils.comparePathToPrefix(op.p.join('.'), prefix)) {
+    								if (utils.isOpOnArray(op) && (Ember.get(context, '_idx') == null)) {
+
+    									var newOp = _.clone(op);
+    									newOp.p = newP;
+    									ex = utils.extractArrayPath(newOp);
+
+    									if (ex.p == "")
+    										context["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
+    									else
+    										Ember.get(context, ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt);
+    									}
+    								else {
+    									if (newP.join('.') == '')
+    										context["property" + didWill + "Change"]('content');
+    									else {
+
+    										if (op.oi && op.od == null)
+    											context.addKey(_.first(newP))
+
+    										if (op.od && op.oi == null)
+    											context.removeKey(_.first(newP))
+
+    										context["property" + didWill + "Change"](newP.join('.'));
+    									}
+    								}
+    							}
+    						}
+    					});
+    				}
+    			}
+    		},
+
+    		extractArrayPath: function(op) {
+    			return {
+    				idx: + _.last(op.p),
+    				p: _.slice(op.p, 0, op.p.length - 1).join('.'),
+    				addAmt: op.li != null
+    					? 1
+    					: 0,
+    				removeAmt: op.ld != null
+    					? 1
+    					: 0
+    			}
+    		}
+
+    	}
     }
-
-    __exports__["default"] = Ember.Object.extend({
-      unload: function() {
-        return this.get('_store').unload(this.get('_type'), this);
-      },
-      setOpsInit: (function() {
-        var doc;
-        var self = this;
-
-        var beforeAfter = function (didWill) {
-          return function(ops, isFromClient) {
-            if (!isFromClient) {
-              _.forEach(ops, function(op) {
-                if (isOpOnArray(op)) {
-                  var ex = extractArrayPath(op);
-                  self.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
-                }
-                else
-                  self["property" +  didWill +  "Change"](op.p.join('.'));
-              });
-            }
-          };
-        };
-
-        doc = this.get('doc');
-        doc.on('before op', beforeAfter("Will"));
-        doc.on('op',beforeAfter("Did"));
-
-      }).on('init')
-
-    });
   });
 define("ember-share/store", 
   ["./utils","exports"],
@@ -357,6 +1053,7 @@ define("ember-share/store",
     __exports__["default"] = Ember.Object.extend({
       socket: null,
       connection: null,
+
       // port: 3000,
       // url : 'https://qa-e.optibus.co',
       url : window.location.hostname,
@@ -441,11 +1138,14 @@ define("ember-share/store",
           });
       },
       createRecord: function (type, data) {
+        var ref, path;
+        path =  (ref = this._getPathForType(type)) ? ref : type.pluralize()
+        path = this._getPrefix(type) + path;
         type = type.pluralize()
         var store = this;
         return store.checkConnection
           .then(function(){
-            var doc = store.connection.get(type, guid());
+            var doc = store.connection.get(path, data.id == null ? guid() : data.id);
             return Promise.all([
               store.whenReady(doc).then(function (doc) {
                 return store.create(doc, data);
@@ -458,9 +1158,19 @@ define("ember-share/store",
             });
           });
       },
-      deleteRecord : function(model) {
-        // TODO: delete and cleanup caches
-        // model._context.context._doc.del()
+      deleteRecord : function(type, id) {
+        var cache = this._cacheFor(type.pluralize());
+        var model = cache.findBy('id', id);
+        var doc = model.get('doc');
+        return new Promise(function (resolve, reject) {
+          doc.del(function (err) {
+            if (err != null)
+              reject(err)
+            else {
+              resolve()
+            }
+          });
+        })
       },
       findAndSubscribeQuery: function(type, query) {
         type = type.pluralize()
@@ -490,10 +1200,25 @@ define("ember-share/store",
           });
         });
       },
-      findQuery: function (type, query) {
-        type = type.pluralize()
+      findRecord: function (type, id) {
         var store = this;
-        store.cache[type] = []
+        return new Promise(function (resolve, reject){
+          store.findQuery(type, {_id: id})
+            .then(function(results){
+              resolve(results[0])
+            })
+            .catch(function (err){
+              reject(err)
+            });
+        })
+      },
+      findQuery: function (type, query) {
+        // type = type.pluralize()
+        var ref, path;
+        path =  (ref = this._getPathForType(type)) ? ref : type.pluralize()
+        path = this._getPrefix(type) + path;
+        var store = this;
+        store.cache[type.pluralize()] = []
         return this.checkConnection
         .then(function(){
           return new Promise(function (resolve, reject) {
@@ -503,7 +1228,7 @@ define("ember-share/store",
               }
               resolve(store._resolveModels(type, results));
             }
-            store.connection.createFetchQuery(type, query, null, fetchQueryCallback);
+            store.connection.createFetchQuery(path, query, null, fetchQueryCallback);
           });
         });
       },
@@ -520,8 +1245,23 @@ define("ember-share/store",
         }
         return cache;
       },
+      _getPathForType: function (type) {
+        var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
+        if (Adapter)
+          return Adapter.create().pathForType();
+      },
+      _getPrefix: function (type) {
+        var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
+        var prefix;
+        if (Adapter)
+          prefix = Adapter.create().get('prefix');
+        if (!prefix) prefix = '';
+        return prefix
+      },
       _factoryFor: function (type) {
-        return this.container.lookupFactory('model:'+type.singularize());
+        var ref;
+        var modelStr = (ref = this.get('modelStr')) ? ref : 'model-sdb'
+        return this.container.lookupFactory(modelStr + ':'+ type.singularize());
       },
       _createModel: function (type, doc) {
         var modelClass = this._factoryFor(type);
@@ -529,8 +1269,6 @@ define("ember-share/store",
         if(modelClass)
         {
           var model = modelClass.create({
-            id: doc.id,
-            // content: JSON.parse(JSON.stringify(doc.data)),
             doc: doc,
             _type: type,
             _store: this
@@ -555,9 +1293,9 @@ define("ember-share/store",
         });
       },
       _resolveModels: function (type, docs) {
-        type = type.pluralize()
+        // type = type.pluralize()
         var store = this;
-        var cache = this._cacheFor(type);
+        var cache = this._cacheFor(type.pluralize());
         var promises = new Array(docs.length);
         for (var i=0; i<docs.length; i++) {
           promises[i] = this._resolveModel(type, docs[i]);
@@ -584,10 +1322,31 @@ define("ember-share/store",
           });
         });
       },
+      unloadRecord: function (doc) {
+        var cache = this.cache[doc.get("_type")];
+        doc.destroy();
+        cache.removeObject(doc);
+        return this
+      },
       unload: function (type, doc) {
         type = type.pluralize();
         var cache = this._cacheFor(type);
+        doc.destroy()
         cache.removeObject(doc)
+      },
+      unloadAll: function (type) {
+        try
+          {
+            var cache = this.cache[type.pluralize()];
+            for (var i = 0; i < cache.length; i++) {
+              var doc = cache[i];
+              doc.destroy()
+            }
+            cache.removeObjects(cache);
+          }
+        catch (err){
+
+        }
       },
       peekAll: function (type) {
         type = type.pluralize()

@@ -1,13 +1,15 @@
 module.exports = {
-  server: {
+  coffeeTests: {
     files: [
-      'lib/**',
-      'vendor/*',
-      'test/**/*'
+      './test/**/*',
+      './lib/**',
+      '!./test/coffee/tests.js',
     ],
-    tasks: [
-      'build',
-      'tests'
-    ]
-  },
+    options: {
+      spawn: false,
+      livereload: 1333,
+      debounceDelay: 5000
+    },
+    tasks: ['coffeeTests']
+  }
 };

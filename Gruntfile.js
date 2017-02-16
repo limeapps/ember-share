@@ -78,6 +78,20 @@ module.exports = function(grunt) {
     'uglify:browserNoVersion'
   ]);
 
+  this.registerTask('coffeeTests',[
+    'clean:tests',
+    'build',
+    'coffeeify:tests',
+    'watch:coffeeTests'
+
+  ]);
+  this.registerTask('phantomTests',[
+    'clean:tests',
+    'build',
+    'coffeeify:tests',
+    'mocha_phantomjs:phantom'
+
+  ]);
   // Custom YUIDoc task
   this.registerTask('docs', ['yuidoc']);
 
@@ -90,7 +104,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-mocha-test');
   grunt.loadNpmTasks('grunt-contrib-yuidoc');
   grunt.loadNpmTasks('grunt-release-it');
-
+  grunt.loadNpmTasks('grunt-contrib-coffeeify');
+  grunt.loadNpmTasks('grunt-include-source');
   // Merge config into emberConfig, overwriting existing settings
   grunt.initConfig(config);
 };
