@@ -279,6 +279,7 @@ exports["default"] = Ember.Object.extend({
   },
   unloadRecord: function (doc) {
     var cache = this.cache[doc.get("_type")];
+    doc.get('doc').destroy();
     doc.destroy();
     cache.removeObject(doc);
     return this
@@ -295,7 +296,8 @@ exports["default"] = Ember.Object.extend({
         var cache = this.cache[type.pluralize()];
         for (var i = 0; i < cache.length; i++) {
           var doc = cache[i];
-          doc.destroy()
+          doc.get('doc').destroy();
+          doc.destroy();
         }
         cache.removeObjects(cache);
       }

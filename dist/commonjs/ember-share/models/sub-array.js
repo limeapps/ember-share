@@ -101,8 +101,11 @@ exports["default"] = function(SubMixin, GetterSettersMixin) {
 			if (ld != null)
 				op.ld = ld;
 
-			if (li != null || ld != null)
+			if (li != null || ld != null) {
+				console.log(op);
 				return this.get('doc').submitOp([op]);
+				
+			}
 		},
 
 		objectAt: function(idx) {

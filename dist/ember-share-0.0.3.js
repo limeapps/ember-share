@@ -425,6 +425,7 @@ define("ember-share/models/model",
     		var utils = Utils(this);
 
     		doc.on('before op', utils.beforeAfter("Will"));
+    		doc.on('after op', utils.beforeAfter("Did"));
     		doc.on('op', utils.beforeAfter("Did"));
 
     	}).observes('doc').on('init')
@@ -571,8 +572,11 @@ define("ember-share/models/sub-array",
     			if (ld != null)
     				op.ld = ld;
 
-    			if (li != null || ld != null)
+    			if (li != null || ld != null) {
+    				console.log(op);
     				return this.get('doc').submitOp([op]);
+    				
+    			}
     		},
 
     		objectAt: function(idx) {
@@ -872,7 +876,12 @@ define("ember-share/models/utils",
     		removeChildren: function (path) {
     			var children = Ember.get(context, '_children');
     			var childrenKeys = Object.keys(children);
+    			var prefix = context.get('_prefix');
     			var utils = this;
+
+    			if (prefix != null) {
+    				path = prefix + '.' + path
+    			}
 
     			childrenKeys = _.reduce(childrenKeys, function(result, key) {
     				var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
@@ -915,7 +924,8 @@ define("ember-share/models/utils",
 
     		triggerChildren: function(didWill, op, isFromClient) {
     			var newP = _.clone(op.p);
-    			var children = Ember.get(context, '_children');
+    			// var children = Ember.get(context, '_children');
+    			var children = context.get('_children');
     			var childrenKeys = Object.keys(children);
     			if (Ember.isEmpty(childrenKeys))
     				return;
@@ -944,6 +954,8 @@ define("ember-share/models/utils",
     			var utils = this;
     			var ex;
     			return function(ops, isFromClient) {
+    				// console.log( _.first (ops));
+
     				if (!isFromClient) {
     					_.forEach(ops, function(op) {
     						// if (didWill == 'Did')
@@ -1005,8 +1017,24 @@ define("ember-share/models/utils",
     										Ember.get(context, ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt);
     									}
     								else {
-    									if (newP.join('.') == '')
-    										context["property" + didWill + "Change"]('content');
+    									if (newP.join('.') == '') {
+
+    										// delete self from father
+    										if (false && _.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
+    											var keyToRemove = path.pop();
+    											if (_.isEmpty(path)) {
+    												utils.removeChildren(keyToRemove);
+    											}
+    											else {
+    												var father = context.get('_children')[path.join('.')];
+    												father.removeKey (keyToRemove);
+    											}
+    										}
+    										else {
+    											context["property" + didWill + "Change"]('content');
+    										}
+    									}
+
     									else {
 
     										if (op.oi && op.od == null)
@@ -1325,6 +1353,7 @@ define("ember-share/store",
       },
       unloadRecord: function (doc) {
         var cache = this.cache[doc.get("_type")];
+        doc.get('doc').destroy();
         doc.destroy();
         cache.removeObject(doc);
         return this
@@ -1341,7 +1370,8 @@ define("ember-share/store",
             var cache = this.cache[type.pluralize()];
             for (var i = 0; i < cache.length; i++) {
               var doc = cache[i];
-              doc.destroy()
+              doc.get('doc').destroy();
+              doc.destroy();
             }
             cache.removeObjects(cache);
           }

@@ -38,7 +38,12 @@ exports["default"] = function(context) {
 		removeChildren: function (path) {
 			var children = Ember.get(context, '_children');
 			var childrenKeys = Object.keys(children);
+			var prefix = context.get('_prefix');
 			var utils = this;
+
+			if (prefix != null) {
+				path = prefix + '.' + path
+			}
 
 			childrenKeys = _.reduce(childrenKeys, function(result, key) {
 				var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
@@ -81,7 +86,8 @@ exports["default"] = function(context) {
 
 		triggerChildren: function(didWill, op, isFromClient) {
 			var newP = _.clone(op.p);
-			var children = Ember.get(context, '_children');
+			// var children = Ember.get(context, '_children');
+			var children = context.get('_children');
 			var childrenKeys = Object.keys(children);
 			if (Ember.isEmpty(childrenKeys))
 				return;
@@ -110,6 +116,8 @@ exports["default"] = function(context) {
 			var utils = this;
 			var ex;
 			return function(ops, isFromClient) {
+				// console.log( _.first (ops));
+
 				if (!isFromClient) {
 					_.forEach(ops, function(op) {
 						// if (didWill == 'Did')
@@ -171,8 +179,24 @@ exports["default"] = function(context) {
 										Ember.get(context, ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt);
 									}
 								else {
-									if (newP.join('.') == '')
-										context["property" + didWill + "Change"]('content');
+									if (newP.join('.') == '') {
+
+										// delete self from father
+										if (false && _.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
+											var keyToRemove = path.pop();
+											if (_.isEmpty(path)) {
+												utils.removeChildren(keyToRemove);
+											}
+											else {
+												var father = context.get('_children')[path.join('.')];
+												father.removeKey (keyToRemove);
+											}
+										}
+										else {
+											context["property" + didWill + "Change"]('content');
+										}
+									}
+
 									else {
 
 										if (op.oi && op.od == null)
