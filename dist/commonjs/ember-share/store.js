@@ -4,8 +4,14 @@ var guid = require("./utils").guid;
 var patchShare = require("./utils").patchShare;
 
 var Promise = Ember.RSVP.Promise;
+var socketReadyState = [
+  'CONNECTING',
+  'OPEN',
+  'CLOSING',
+  'CLOSE'
+]
 
-exports["default"] = Ember.Object.extend({
+exports["default"] = Ember.Object.extend(Ember.Evented, {
   socket: null,
   connection: null,
 
@@ -13,7 +19,26 @@ exports["default"] = Ember.Object.extend({
   // url : 'https://qa-e.optibus.co',
   url : window.location.hostname,
   init: function () {
-    this.checkConnection = Ember.Deferred.create({});
+    var store = this;
+    this.checkConnection = new Promise(function (resolve, reject) {
+      if (store.socket == null) {
+        // console.log('no socket');
+        store.one('connectionOpen', resolve);
+      }
+      else {
+        switch(socketReadyState[store.socket.readyState]) {
+          case 'OPEN':
+            return resolve();
+          case 'CONNECTING':
+            return store.one('connectionOpen', resolve);
+          case 'CLOSE':
+            return reject('connection closed');
+          case 'CLOSING':
+            return reject('connection closing');
+        }
+
+      }
+    });
     var store = this;
     this.cache = {};
     if(!window.sharedb)
@@ -27,12 +52,12 @@ exports["default"] = Ember.Object.extend({
     {
       this.beforeConnect()
       .then(function(){
-        Ember.sendEvent(store,'connect');
+        store.trigger('connect');
       });
     }
     else
     {
-      Ember.sendEvent(this,'connect');
+      store.trigger('connect');
     }
   },
   doConnect : function(options){
@@ -43,14 +68,16 @@ exports["default"] = Ember.Object.extend({
       this.setProperties(options);
       this.socket = new BCSocket(this.get('url'), {reconnect: true});
       this.socket.onerror = function(err){
-        Ember.sendEvent(store,'connectionError',[err]);
+        store.trigger('connectionError', [err]);
+
       };
       this.socket.onopen = function(){
-        store.checkConnection.resolve();
-        Ember.sendEvent(store,'connectionOpen');
+        // store.checkConnection.resolve();
+        store.trigger('connectionOpen');
+
       };
       this.socket.onclose = function(){
-        Ember.sendEvent(store,'connectionEnd');
+        store.trigger('connectionEnd');
       };
     }
     else if(window.Primus)
@@ -64,14 +91,15 @@ exports["default"] = Ember.Object.extend({
         hostname += ':' + this.get('port');
       this.socket = new Primus(hostname);
       this.socket.on('error', function error(err) {
-         Ember.sendEvent(store,'connectionError',[err]);
+        store.trigger('connectionError', [err]);
       });
       this.socket.on('open', function() {
-        store.checkConnection.resolve();
-         Ember.sendEvent(store,'connectionOpen');
+        // console.log('socket open');
+        // store.checkConnection.resolve();
+        store.trigger('connectionOpen');
       });
       this.socket.on('end', function() {
-         Ember.sendEvent(store,'connectionEnd');
+        store.trigger('connectionEnd');
       });
     }
     else {
