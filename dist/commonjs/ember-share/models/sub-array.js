@@ -102,9 +102,9 @@ exports["default"] = function(SubMixin, GetterSettersMixin) {
 				op.ld = ld;
 
 			if (li != null || ld != null) {
-				console.log(op);
+				// console.log(op);
 				return this.get('doc').submitOp([op]);
-				
+
 			}
 		},
 

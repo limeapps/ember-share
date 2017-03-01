@@ -28,7 +28,7 @@ module.exports =
 
 		app.post '/op', (req, res) ->
 			{id, op, collection} = req.body
-			console.log op
+			# console.log op
 			doc = SDBConnection.get collection, id
 			doc.fetch (err) ->
 				return res.send errorFetch: err if err?

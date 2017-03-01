@@ -572,9 +572,9 @@ define("ember-share/models/sub-array",
     				op.ld = ld;
 
     			if (li != null || ld != null) {
-    				console.log(op);
+    				// console.log(op);
     				return this.get('doc').submitOp([op]);
-    				
+
     			}
     		},
 
@@ -689,7 +689,7 @@ define("ember-share/models/sub-mixin",
     	},
 
     	replaceContent: function(content, noSet) {
-    		this.notifyWillProperties(Object.keys(content));
+    		this.notifyWillProperties(this.get('_subProps').toArray());
     		var prefix = this.get('_prefix');
     		var idx = this.get('_idx')
     		var path = (idx == null) ? prefix : prefix + '.' + idx
@@ -701,16 +701,18 @@ define("ember-share/models/sub-mixin",
     		var utils = Utils(this);
 
     		utils.removeChildren(path);
-
-    		var toDelete = _.difference(Object.keys(this), Object.keys(content));
+    		if (_.isPlainObject(content))
+    			var toDelete = _.difference(Object.keys(this), Object.keys(content))
+    		else
+    			var toDelete = Object.keys(this);
 
     		_.forEach(toDelete, function(prop) {
     			delete self[prop]
     		});
-
+    		this.get('_subProps').removeObjects(toDelete);
     		Ember.setProperties(this, {tempContent: content});
     		this.createInnerAttrs();
-    		this.notifyDidProperties(Object.keys(content));
+    		this.notifyDidProperties(this.get('_subProps').toArray());
 
     		return this
     	},
