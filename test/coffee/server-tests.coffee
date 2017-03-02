@@ -57,7 +57,7 @@ module.exports = ->
       App.ApplicationController = Ember.Controller.extend
         initShareStore: (->
           ShareStore = @ShareStore
-          done()
+          ShareStore.checkConnection.then done
         ).on 'init'
       App.initialize()
 
