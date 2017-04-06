@@ -54,7 +54,7 @@ var GetterSettersMixin = Ember.Mixin.create({
 			oi = getPlainObject(oi);
 			var p = path.split('.');
 			var utils = Utils(this);
-			utils.removeChildren(path);
+			utils.removeChildren(path, true);
 			var op = {
 				p: p,
 				od: od,
@@ -109,7 +109,7 @@ var SDBBase = Ember.Object.extend(Ember.Evented, GetterSettersMixin, {
 	deleteProperty: function deleteProperty(k) {
 		var doc = this.get('doc');
 		var p = k.split('.');
-		var od = this.get(k);
+		var od = getPlainObject(this.get(k));
 		doc.submitOp([
 			{
 				p: p,
@@ -132,7 +132,8 @@ var SDBBase = Ember.Object.extend(Ember.Evented, GetterSettersMixin, {
 		_.forEach(SDBpropsFromObj, function(key) {
 			self.set(key, obj[key])
 		});
-	}
+	},
+
 });
 
 SDBBase = SDBBase.extend(UseSubsMixin);

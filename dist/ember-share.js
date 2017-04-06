@@ -23,6 +23,8 @@ define("ember-share/attr",
   ["exports"],
   function(__exports__) {
     "use strict";
+    var sillyFunction = function (value) {return value};
+
     __exports__["default"] = function(sdbProps) {
     	return function() {
     		var options,
@@ -34,10 +36,22 @@ define("ember-share/attr",
     				return options = arg;
     			} else {
     				if (_.isString(arg)) {
-    					return type = null;
+    					return type = arg.charAt(0).toUpperCase() + arg.slice(1);
     				}
     			}
     		});
+    		if (type != null && window[type] != null) {
+    			var transfromToType = function (value) {
+    				var newValue = new window[type](value)
+    					if (type == 'Date')
+    						return newValue
+    					else
+    						return newValue.valueOf()
+    			};
+    		} else {
+    			var transfromToType = sillyFunction
+    		}
+
     		return Ember.computed({
     			get: function(k) {
     				this.get(sdbProps, true).addObject(k);
@@ -54,9 +68,9 @@ define("ember-share/attr",
     				], k);
 
     				if (isSpecielKey || this._fullPath == null)
-    					return this._get(k, true)
+    					return transfromToType(this._get(k, true))
     				else
-    					return this._get(this._fullPath(k))
+    					return transfromToType(this._get(this._fullPath(k)))
 
     			},
     			set: function(k, v, isFromServer) {
@@ -292,7 +306,7 @@ define("ember-share/models/base",
     			oi = getPlainObject(oi);
     			var p = path.split('.');
     			var utils = Utils(this);
-    			utils.removeChildren(path);
+    			utils.removeChildren(path, true);
     			var op = {
     				p: p,
     				od: od,
@@ -347,7 +361,7 @@ define("ember-share/models/base",
     	deleteProperty: function deleteProperty(k) {
     		var doc = this.get('doc');
     		var p = k.split('.');
-    		var od = this.get(k);
+    		var od = getPlainObject(this.get(k));
     		doc.submitOp([
     			{
     				p: p,
@@ -370,7 +384,8 @@ define("ember-share/models/base",
     		_.forEach(SDBpropsFromObj, function(key) {
     			self.set(key, obj[key])
     		});
-    	}
+    	},
+
     });
 
     SDBBase = SDBBase.extend(UseSubsMixin);
@@ -402,7 +417,7 @@ define("ember-share/models/model",
     		return this.get('_store').unload(this.get('_type'), this);
     	},
 
-    	id: Ember.computed.oneWay('doc.id'),
+    	id: Ember.computed.reads('doc.id'),
 
     	_childLimiations: (function() {
     		return []
@@ -422,47 +437,31 @@ define("ember-share/models/model",
 
     	setOpsInit: (function() {
     		var doc = this.get('doc', true);
+    		var oldDoc = this.get('oldDoc');
     		var utils = Utils(this);
 
-    		doc.on('before op', utils.beforeAfter("Will"));
-    		doc.on('after op', utils.beforeAfter("Did"));
-    		doc.on('op', utils.beforeAfter("Did"));
+    		if (oldDoc) {
+    			oldDoc.destroy();
+    		}
+    		// doc.on('before op', utils.beforeAfter("Will"));
+    		doc.on('before component', utils.beforeAfter("Will"));
+    		doc.on('after component', utils.beforeAfter("Did"));
+    		// doc.on('op', utils.beforeAfter("Did"));
 
-    	}).observes('doc').on('init')
+    		this.set('oldDoc', doc);
+
+    	}).observes('doc').on('init'),
+
+
+    	willDestroy: function () {
+    		var utils = Utils(this);
+    		this._super.apply(this, arguments)
+    		utils.removeChildren();
+    		console.log('destroying children');
+    	}
+
     });
 
-    // var set = Ember.Object.prototype.set;
-    // var get = Ember.Object.prototype.get;
-    //
-    // Ember.Object.prototype.get = function (key, selfCall) {
-    //   var firstValue = _.first(key.split('.'));
-    //   var secondValue = key.split('.')[1]
-    //   if (!selfCall &&
-    //       Ember.get(this, 'content._isSDB', true) &&
-    //       ((firstValue != 'content' && Ember.get(this, 'content.' + firstValue) != null) ||
-    //       (firstValue == 'content' && secondValue != null)
-    //     )
-    //   ) {
-    //     var content = Ember.get(this, 'content');
-    //     if (firstValue == 'content') key = key.split('.').slice(1).join('.');
-    //     return content.get(key)
-    //   }
-    //   else
-    //   // if ((key != '_sdbProps') && (key != 'doc')console.log(key);
-    //     return get.call(this, key)
-    // };
-    //
-    // Ember.Object.prototype.set = function(key, value, selfCall) {
-    // 	var firstValue = _.first(key.split('.'));
-    // 	var secondValue = key.split('.')[1]
-    // 	if (!selfCall && this.get('content._isSDB') && ((firstValue != 'content' && this.get('content.' + firstValue) != null) || (firstValue == 'content' && secondValue != null))) {
-    // 		var content = this.get('content');
-    // 		if (firstValue == 'content')
-    // 			key = key.split('.').slice(1).join('.');
-    // 		return content.set(key, value)
-    // 	} else
-    // 		return set.call(this, key, value)
-    // };
 
     __exports__["default"] = SDBRoot
   });
@@ -490,12 +489,8 @@ define("ember-share/models/sub-array",
     		_isArrayProxy: true,
 
     		arrayContentDidChange: function(startIdx, removeAmt, addAmt) {
-    			var _removeAmt = (removeAmt == null)
-    				? 0
-    				: removeAmt * -1;
-    			if (!!(_removeAmt + (addAmt == null)
-    				? 0
-    				: addAmt))
+    			var _removeAmt = (removeAmt == null) ? 0 : removeAmt * -1;
+    			if (!!(_removeAmt + (addAmt == null) ? 0 : addAmt))
     				Ember.get(this, 'content').propertyDidChange('lastObject');
     			return this._super.apply(this, arguments)
     		},
@@ -609,7 +604,14 @@ define("ember-share/models/sub-array",
     			}
     			this.arrayContentDidChange(start, len, objects.length);
     			return this //._super(start, len, objects)
-    		}
+    		},
+
+    		onChangeDoc: (function () {
+    			// debugger
+    			// this.set ('content', this.get('doc.data.' + this.get('_prefix')))
+    			// Ember.run.next (this, function () P{})
+    			this.replaceContent(this.get('doc.data.' + this.get('_prefix')), true)
+    		}).observes('doc')
     	});
     }
   });
@@ -645,6 +647,8 @@ define("ember-share/models/sub-mixin",
     		return []
     	}).property(),
 
+    	doc: Ember.computed.reads('_root.doc'),
+
     	createInnerAttrs: (function() {
     		var tempContent = Ember.get(this, 'tempContent');
     		var self = this;
@@ -660,14 +664,29 @@ define("ember-share/models/sub-mixin",
     		delete this['tempContent'];
     	}).on('init'),
 
+    	beforeFn: (function (){return []}).property(),
+    	afterFn: (function (){return []}).property(),
+
     	activateListeners: (function() {
     		var utils = Utils(this);
-    		var doc = this.get('doc');
 
-    		this.on('before op', utils.beforeAfterChild("Will"));
-    		this.on('op', utils.beforeAfterChild("Did"));
+    		var beforeFn = utils.beforeAfterChild("Will");
+    		var afterFn = utils.beforeAfterChild("Did");
 
-    	}).on('init'),
+    		if (this.has('before op')) {
+    			this.off('before op', this.get('beforeFn').pop())
+    		}
+    		if (this.has('op')) {
+    			this.off('op', this.get('afterFn').pop())
+    		}
+    		this.on('before op', beforeFn);
+    		this.on('op', afterFn);
+
+    		this.get('beforeFn').push(beforeFn);
+    		this.get('afterFn').push(afterFn);
+
+    	// }).on('init'),
+    	}).observes('doc').on('init'),
 
     	_fullPath: function(path) {
     		var prefix = Ember.get(this, '_prefix');
@@ -702,18 +721,42 @@ define("ember-share/models/sub-mixin",
     		var utils = Utils(this);
 
     		utils.removeChildren(path);
-    		if (_.isPlainObject(content))
-    			var toDelete = _.difference(Object.keys(this), Object.keys(content))
-    		else
-    			var toDelete = Object.keys(this);
 
-    		_.forEach(toDelete, function(prop) {
-    			delete self[prop]
-    		});
-    		this.get('_subProps').removeObjects(toDelete);
-    		Ember.setProperties(this, {tempContent: content});
-    		this.createInnerAttrs();
-    		this.notifyDidProperties(this.get('_subProps').toArray());
+    		if (_.isEmpty(Object.keys(this))) {
+    			Ember.setProperties(this, {tempContent: content});
+    			this.createInnerAttrs();
+
+    			var notifyFather = function (prefixArr, keys) {
+    				if (_.isEmpty(prefixArr))
+    					self.get('_root').notifyPropertyChange(keys.join('.'))
+    				else {
+    					var child = self.get['_children'][prefixArr.join('.')]
+    					if (child != null)
+    						child.notifyPropertyChange(prefixArr.join('.') + '.' + keys.join('.'))
+    					else
+    						keys.push(prefixArr.pop());
+    						notifyFather(prefixArr, keys);
+    				}
+    			};
+    			var prefixArr = prefix.split('.')
+    			var key = prefixArr.pop()
+
+    			notifyFather(prefixArr, [key]);
+    		}
+    		else {
+    			if (_.isPlainObject(content))
+    				var toDelete = _.difference(Object.keys(this), Object.keys(content))
+    			else
+    				var toDelete = Object.keys(this);
+
+    			_.forEach(toDelete, function(prop) {
+    				delete self[prop]
+    			});
+    			this.get('_subProps').removeObjects(toDelete);
+    			Ember.setProperties(this, {tempContent: content});
+    			this.createInnerAttrs();
+    			this.notifyDidProperties(this.get('_subProps').toArray());
+    		}
 
     		return this
     	},
@@ -737,20 +780,17 @@ define("ember-share/models/sub-mixin",
     	removeKey: function (key) {
     		var attr = attrs('_subProps');
     		var utils = Utils(this);
-    		utils.removeChildren(key);
+    		utils.removeChildren(key, true);
     		this.get('_subProps').removeObject(key);
     		delete this[key];
     		return this
-    	}
+    	},
 
-    	// set: function (path) {
-    	// 	debugger
-    	// 	if (!path.match('.') && this.get('_subProps'))
-    	// 		console.log('d');
-    	// },
-    	// get: function (key) {
-    	// 	debugger
-    	// }
+    	removeListeners: function () {
+    		this.off('before op', this.get('beforeFn'))
+    		this.off('op', this.get('afterFn'))
+
+    	}
 
     })
   });
@@ -781,7 +821,7 @@ define("ember-share/models/use-subs-mixin",
     	useSubs: function useSubs(content, k, idx) {
     		var utils = Utils(this);
 
-    		if (utils.prefixToChildLimiations(k))
+    		if (utils.matchChildToLimitations(k))
     			return content;
 
     		if (_.isPlainObject(content)) {
@@ -816,7 +856,7 @@ define("ember-share/models/use-subs-mixin",
     				child = {};
 
     			var sub = subs[use].extend({
-    				doc: this.get('doc'),
+    				// doc: this.get('doc'),
     				_children: Ember.get(this, '_children'),
     				_prefix: k,
     				_idx: idx,
@@ -858,7 +898,7 @@ define("ember-share/models/utils",
     			return counter - (as.length / 1000)
     		},
 
-    		prefixToChildLimiations: function (key) {
+    		matchChildToLimitations: function (key) {
     			var childLimiations = Ember.get(context, '_root._childLimiations');
     			var prefix = Ember.get(context, '_prefix')
 
@@ -875,22 +915,56 @@ define("ember-share/models/utils",
     			})
     		},
 
-    		removeChildren: function (path) {
+    		prefixToChildLimiations: function (key) {
+    			var childLimiations = Ember.get(context, '_root._childLimiations');
+    			var prefix = Ember.get(context, '_prefix')
+
+    			if (prefix == null || key.match(prefix))
+    				prefix = key
+    			else
+    				prefix += '.' + key
+
+    			prefix = prefix.split('.');
+    			var self = this;
+    			var relevantLimitIndex = this.findMaxIndex(_.map (childLimiations, function (_limit) {
+    				var limit = _limit.split('/');
+    				return Math.ceil(self.matchingPaths(limit, prefix))
+    			}));
+    			if (relevantLimitIndex >= 0) {
+    				var relevantLimit = childLimiations[relevantLimitIndex].split('/');
+    				var orignalPrefix;
+    				var result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)) );
+    				if (orignalPrefix = Ember.get(context, '_prefix')) {
+    					orignalPrefix = orignalPrefix.split('.');
+    					return result.slice(orignalPrefix.length)
+    				} else
+    					return result.join('.');
+    			}
+    			else {
+    				return key;
+    			}
+
+    		},
+
+    		removeChildren: function (path, includeSelf) {
     			var children = Ember.get(context, '_children');
     			var childrenKeys = Object.keys(children);
     			var prefix = context.get('_prefix');
     			var utils = this;
 
-    			if (prefix != null) {
+    			if ((prefix != null) && path && path.indexOf(prefix) != 0) {
     				path = prefix + '.' + path
     			}
 
-    			childrenKeys = _.reduce(childrenKeys, function(result, key) {
-    				var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
-    				if (matches >= path.split('.').length)
-    					result.push(key);
-    				return result
-    			}, []);
+    			if (path) {
+    				childrenKeys = _.reduce(childrenKeys, function(result, key) {
+    					var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
+    					if (includeSelf  && (matches >= path.split('.').length) ||
+    					   (!includeSelf && (matches >  path.split('.').length)))
+    						result.push(key);
+    					return result
+    				}, []);
+    			}
 
     			_.forEach (childrenKeys, function (key) {
     				children[key].destroy()
@@ -899,7 +973,7 @@ define("ember-share/models/utils",
     		},
 
     		comparePathToPrefix: function(path, prefix) {
-    			return Boolean(this.matchingPaths(path.split('.'), prefix.split('.')))
+    			return Boolean(Math.ceil(this.matchingPaths(path.split('.'), prefix.split('.'))))
     		},
 
     		cutLast: function(path, op) {
@@ -972,7 +1046,7 @@ define("ember-share/models/utils",
     								// console.log('op came to parent');
     								context.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
     							} else {
-    								context["property" + didWill + "Change"](op.p.join('.'));
+    								context["property" + didWill + "Change"](utils.prefixToChildLimiations(op.p.join('.')));
     							}
     						}
     					});
@@ -994,11 +1068,13 @@ define("ember-share/models/utils",
     								context.replaceContent(op.oi, true)
     							} else {
     								if (op.od != null) {
-    									prefix = prefix.split('.');
-    									var key = prefix.pop();
+    									var fatherPrefix = prefix.split('.');
+    									var key = fatherPrefix.pop();
     									var father;
-    									if (father = context.get('_children.' + prefix.join('.')))
+    									if (!_.isEmpty(fatherPrefix) && (father = context.get('_children.' + fatherPrefix.join('.'))))
     										father.removeKey(key);
+    									else
+    										context.get('_root').propertyDidChange(prefix)
     								}
     							}
     						} else {
@@ -1045,7 +1121,7 @@ define("ember-share/models/utils",
     										if (op.od && op.oi == null)
     											context.removeKey(_.first(newP))
 
-    										context["property" + didWill + "Change"](newP.join('.'));
+    										context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
     									}
     								}
     							}
@@ -1053,6 +1129,10 @@ define("ember-share/models/utils",
     					});
     				}
     			}
+    		},
+
+    		findMaxIndex: function (arr) {
+    			return arr.indexOf(_.max(arr))
     		},
 
     		extractArrayPath: function(op) {
@@ -1095,27 +1175,74 @@ define("ember-share/store",
       // url : 'https://qa-e.optibus.co',
       url : window.location.hostname,
       init: function () {
-        var store = this;
-        this.checkConnection = new Promise(function (resolve, reject) {
-          if (store.socket == null) {
-            // console.log('no socket');
-            store.one('connectionOpen', resolve);
-          }
-          else {
-            switch(socketReadyState[store.socket.readyState]) {
-              case 'OPEN':
-                return resolve();
-              case 'CONNECTING':
-                return store.one('connectionOpen', resolve);
-              case 'CLOSE':
-                return reject('connection closed');
-              case 'CLOSING':
-                return reject('connection closing');
-            }
 
-          }
-        });
         var store = this;
+
+        this.checkSocket = function () {
+          return new Promise(function (resolve, reject) {
+
+              if (store.socket == null) {
+                store.one('connectionOpen', resolve);
+              }
+              else {
+                var checkState = function (state, cb) {
+                  switch(state) {
+                    case 'connected':
+                      return resolve();
+                    case 'connecting':
+                      return store.connection.on('connected', resolve);
+                    default: cb(state)
+                  }
+                }
+                var checkStateFail = function (state) {
+                  switch(state) {
+                    case 'closed':
+                      return reject('connection closed');
+                    case 'disconnected':
+                      return reject('connection disconnected');
+                    case 'stopped':
+                      return reject('connection closing');
+                  }
+                }
+                var failed = false
+                checkState(store.connection.state, function(state){
+                  if (failed)
+                    checkStateFail(state)
+                  else
+                    Ember.run.next (this, function () {
+                      failed = true;
+                      checkState(store.connection.state, checkStateFail)
+                    })
+                })
+
+
+            }
+          });
+        }
+
+        this.checkConnection = function () {
+          return new Promise(function (resolve, reject) {
+            return store.checkSocket()
+              .then(function () {
+                if (store.authentication != null || store.isAuthenticated != null) {
+                  store.on('connectionEnd', function () {
+                    console.log('ending connection');
+                    store.isAuthenticated = false
+                  })
+                  if (store.isAuthenticated) return resolve();
+                  if (store.isAuthenticating) return store.on('authenticated', resolve);
+                  if (!store.isAuthenticated) return store.authentication(store.connection.id)
+                  // if (!store.isAuthenticating) return reject()
+                  return reject('could not authenticat')
+                } else
+                  return resolve()
+              })
+              .catch(function (err) {
+                return reject(err)
+              })
+          });
+        };
+
         this.cache = {};
         if(!window.sharedb)
         {
@@ -1148,7 +1275,6 @@ define("ember-share/store",
 
           };
           this.socket.onopen = function(){
-            // store.checkConnection.resolve();
             store.trigger('connectionOpen');
 
           };
@@ -1166,28 +1292,72 @@ define("ember-share/store",
           if (this.get("port"))
             hostname += ':' + this.get('port');
           this.socket = new Primus(hostname);
+          console.log('connection starting');
+
           this.socket.on('error', function error(err) {
             store.trigger('connectionError', [err]);
           });
           this.socket.on('open', function() {
-            // console.log('socket open');
-            // store.checkConnection.resolve();
+            console.log('connection open');
             store.trigger('connectionOpen');
           });
           this.socket.on('end', function() {
+            store.trigger('connectionEnd');
+          });
+          this.socket.on('close', function() {
             store.trigger('connectionEnd');
           });
         }
         else {
           throw new Error("No Socket library included");
         }
+        var oldHandleMessage = sharedb.Connection.prototype.handleMessage;
+        var oldSend = sharedb.Connection.prototype.send;
+        sharedb.Connection.prototype.send = function (msg) {
+          var self = this, args = arguments;
+          if (store.isAuthenticating || !store.isAuthenticated) {
+            store.checkConnection().then(function () {
+              // console.log(msg);
+              oldSend.apply(self, args)
+            })
+          }
+          else {
+            // console.log(msg);
+            oldSend.apply(self, args);
+
+          }
+        };
+
+        sharedb.Connection.prototype.handleMessage = function(message) {
+          var athenticating, handleMessageArgs;
+          handleMessageArgs = arguments;
+          console.log(message.a);
+          var context = this;
+          if (message.a === 'init' && (typeof message.id === 'string') && message.protocol === 1 && typeof store.authenticate === 'function') {
+            store.isAuthenticating = true;
+            return store.authenticate(message.id)
+              .then(function() {
+                  console.log('authenticated !');
+                  store.isAuthenticating = false;
+                  store.isAuthenticated = true;
+                  store.trigger('authenticated')
+                  return oldHandleMessage.apply(context, handleMessageArgs);
+                })
+              .catch(function (err) {
+                debugger
+              })
+          } else {
+            return oldHandleMessage.apply(this, handleMessageArgs);
+          }
+        };
+
         this.connection = new sharedb.Connection(this.socket);
 
       }.on('connect'),
       find: function (type, id) {
         type = type.pluralize()
         var store = this;
-        return this.checkConnection
+        return this.checkConnection()
           .then(function(){
               return store.findQuery(type, {_id: id}).then(function (models) {
               return models[0];
@@ -1202,7 +1372,7 @@ define("ember-share/store",
         path = this._getPrefix(type) + path;
         type = type.pluralize()
         var store = this;
-        return store.checkConnection
+        return store.checkConnection()
           .then(function(){
             var doc = store.connection.get(path, data.id == null ? guid() : data.id);
             return Promise.all([
@@ -1234,8 +1404,10 @@ define("ember-share/store",
       findAndSubscribeQuery: function(type, query) {
         type = type.pluralize()
         var store = this;
+        var prefix = this._getPrefix(type);
         store.cache[type] = []
-        return this.checkConnection
+
+        return this.checkConnection()
         .then(function(){
           return new Promise(function (resolve, reject) {
             function fetchQueryCallback(err, results, extra) {
@@ -1244,7 +1416,7 @@ define("ember-share/store",
               }
               resolve(store._resolveModels(type, results));
             }
-            query = store.connection.createSubscribeQuery(type, query, null, fetchQueryCallback);
+            query = store.connection.createSubscribeQuery(prefix + type, query, null, fetchQueryCallback);
             query.on('insert', function (docs) {
               store._resolveModels(type, docs)
             });
@@ -1278,7 +1450,7 @@ define("ember-share/store",
         path = this._getPrefix(type) + path;
         var store = this;
         store.cache[type.pluralize()] = []
-        return this.checkConnection
+        return this.checkConnection()
         .then(function(){
           return new Promise(function (resolve, reject) {
             function fetchQueryCallback(err, results, extra) {
@@ -1625,6 +1797,7 @@ define("ember-share/utils",
     		});
 
     		stream.on('readyStateChange', function() {
+    			console.log(stream.readyState);
     			setState(stream.readyState);
     		});
 

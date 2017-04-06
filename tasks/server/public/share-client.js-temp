@@ -1,1 +1,0 @@
-window.sharedb = require('../../../node_modules/sharedb/lib/client');

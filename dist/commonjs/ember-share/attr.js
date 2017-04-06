@@ -1,4 +1,6 @@
 "use strict";
+var sillyFunction = function (value) {return value};
+
 exports["default"] = function(sdbProps) {
 	return function() {
 		var options,
@@ -10,10 +12,22 @@ exports["default"] = function(sdbProps) {
 				return options = arg;
 			} else {
 				if (_.isString(arg)) {
-					return type = null;
+					return type = arg.charAt(0).toUpperCase() + arg.slice(1);
 				}
 			}
 		});
+		if (type != null && window[type] != null) {
+			var transfromToType = function (value) {
+				var newValue = new window[type](value)
+					if (type == 'Date')
+						return newValue
+					else
+						return newValue.valueOf()
+			};
+		} else {
+			var transfromToType = sillyFunction
+		}
+
 		return Ember.computed({
 			get: function(k) {
 				this.get(sdbProps, true).addObject(k);
@@ -30,9 +44,9 @@ exports["default"] = function(sdbProps) {
 				], k);
 
 				if (isSpecielKey || this._fullPath == null)
-					return this._get(k, true)
+					return transfromToType(this._get(k, true))
 				else
-					return this._get(this._fullPath(k))
+					return transfromToType(this._get(this._fullPath(k)))
 
 			},
 			set: function(k, v, isFromServer) {

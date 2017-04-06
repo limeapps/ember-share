@@ -33,3 +33,7 @@ module.exports = ShareProxy.extend
   name: attr()
   updatedAt: attr()
   updatedBy: attr()
+  
+  limitedObject: attr()
+
+  _childLimiations: ['limitedObject', 'preferences']

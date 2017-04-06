@@ -5,7 +5,7 @@ var Utils = require("./utils")["default"];exports["default"] = Ember.Mixin.creat
 	useSubs: function useSubs(content, k, idx) {
 		var utils = Utils(this);
 
-		if (utils.prefixToChildLimiations(k))
+		if (utils.matchChildToLimitations(k))
 			return content;
 
 		if (_.isPlainObject(content)) {
@@ -40,7 +40,7 @@ var Utils = require("./utils")["default"];exports["default"] = Ember.Mixin.creat
 				child = {};
 
 			var sub = subs[use].extend({
-				doc: this.get('doc'),
+				// doc: this.get('doc'),
 				_children: Ember.get(this, '_children'),
 				_prefix: k,
 				_idx: idx,

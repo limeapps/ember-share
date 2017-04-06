@@ -17,6 +17,15 @@ module.exports = ->
     afterEach ->
       schedule = null
 
+    it 'test type of attribute Date', ->
+      date = schedule.get 'createdAt'
+      assert.typeOf (date.getDate), 'function'
+
+    it 'test type of attribute Boolean', ->
+      broken = schedule.get 'broken'
+      assert.isBoolean broken
+      assert.equal broken, false
+
     it 'Get name', ->
       name = schedule.get 'name'
       assert.equal name, 'my mocked schedule'

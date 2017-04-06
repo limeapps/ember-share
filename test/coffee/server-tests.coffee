@@ -57,7 +57,7 @@ module.exports = ->
       App.ApplicationController = Ember.Controller.extend
         initShareStore: (->
           ShareStore = @ShareStore
-          ShareStore.checkConnection.then done
+          @ShareStore.checkConnection().then done
         ).on 'init'
       App.initialize()
 
@@ -69,8 +69,6 @@ module.exports = ->
       id: schedule.get 'id'
       collection: 'schedules'
       op: op
-
-
 
     it 'set', (done) ->
       Obj = Ember.Object.extend
@@ -323,3 +321,41 @@ module.exports = ->
           assert.isUndefined duties.get 'a'
           done()
         .catch done
+
+    it 'Child Limiations (Object)', (done) ->
+
+      Obj = Ember.Object.extend
+        limitedObject: (->
+          console.log 'should happen twice'
+          @get 'schedule.limitedObject.some.data'
+        ).property 'schedule.limitedObject'
+
+      obj = Obj.create {schedule}
+      obj.get 'limitedObject'
+
+      op =  p:[ 'limitedObject', 'some', 'data'], oi: 2, od: 1
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal obj.get('limitedObject'), 2
+          done()
+        .catch done
+
+    # it 'Child Limiations (Array)', (done) ->
+    #   Obj = Ember.Object.extend
+    #     allowDeadHeads: (->
+    #       console.log 'get perform'
+    #       @get 'schedule.preferences.0.pref1.allowDeadHeads'
+    #     ).property 'schedule.limitedObject'
+    #   obj = Obj.create {schedule}
+    #   console.log obj.get 'allowDeadHeads'
+    #   op =  p:[ 'preferences', 0, 'pref1', 'allowDeadHeads'], oi: false, od: true
+    #
+    #   postJson 'op/', createDataOp(op), 100
+    #     .then (response) ->
+    #       assert.equal response?.msg, 'Success'
+    #       console.log obj.get 'allowDeadHeads'
+    #       assert.isFalse obj.get('allowDeadHeads')
+    #       done()
+    #     .catch done

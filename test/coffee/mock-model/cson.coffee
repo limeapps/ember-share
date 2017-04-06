@@ -1,8 +1,20 @@
 module.exports = ->
   order: ['a', 'b', 'c']
+  limitedObject:
+    some:
+      data: 1
   log: [1, 2, 3]
+  preferences: [
+    pref1:
+      allowDeadHeads: true
+  ,
+    pref2:
+      allowDeadHeads: false
+  ]
   revision: 1
   name: 'my mocked schedule'
+  createdAt: 'Mon Mar 27 2017 14:42:07 GMT+0300 (IDT)'
+  broken: false
   duties:
     a:
       id: 'a'

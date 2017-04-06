@@ -18,7 +18,7 @@ exports["default"] = function(context) {
 			return counter - (as.length / 1000)
 		},
 
-		prefixToChildLimiations: function (key) {
+		matchChildToLimitations: function (key) {
 			var childLimiations = Ember.get(context, '_root._childLimiations');
 			var prefix = Ember.get(context, '_prefix')
 
@@ -35,22 +35,56 @@ exports["default"] = function(context) {
 			})
 		},
 
-		removeChildren: function (path) {
+		prefixToChildLimiations: function (key) {
+			var childLimiations = Ember.get(context, '_root._childLimiations');
+			var prefix = Ember.get(context, '_prefix')
+
+			if (prefix == null || key.match(prefix))
+				prefix = key
+			else
+				prefix += '.' + key
+
+			prefix = prefix.split('.');
+			var self = this;
+			var relevantLimitIndex = this.findMaxIndex(_.map (childLimiations, function (_limit) {
+				var limit = _limit.split('/');
+				return Math.ceil(self.matchingPaths(limit, prefix))
+			}));
+			if (relevantLimitIndex >= 0) {
+				var relevantLimit = childLimiations[relevantLimitIndex].split('/');
+				var orignalPrefix;
+				var result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)) );
+				if (orignalPrefix = Ember.get(context, '_prefix')) {
+					orignalPrefix = orignalPrefix.split('.');
+					return result.slice(orignalPrefix.length)
+				} else
+					return result.join('.');
+			}
+			else {
+				return key;
+			}
+
+		},
+
+		removeChildren: function (path, includeSelf) {
 			var children = Ember.get(context, '_children');
 			var childrenKeys = Object.keys(children);
 			var prefix = context.get('_prefix');
 			var utils = this;
 
-			if (prefix != null) {
+			if ((prefix != null) && path && path.indexOf(prefix) != 0) {
 				path = prefix + '.' + path
 			}
 
-			childrenKeys = _.reduce(childrenKeys, function(result, key) {
-				var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
-				if (matches >= path.split('.').length)
-					result.push(key);
-				return result
-			}, []);
+			if (path) {
+				childrenKeys = _.reduce(childrenKeys, function(result, key) {
+					var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
+					if (includeSelf  && (matches >= path.split('.').length) ||
+					   (!includeSelf && (matches >  path.split('.').length)))
+						result.push(key);
+					return result
+				}, []);
+			}
 
 			_.forEach (childrenKeys, function (key) {
 				children[key].destroy()
@@ -59,7 +93,7 @@ exports["default"] = function(context) {
 		},
 
 		comparePathToPrefix: function(path, prefix) {
-			return Boolean(this.matchingPaths(path.split('.'), prefix.split('.')))
+			return Boolean(Math.ceil(this.matchingPaths(path.split('.'), prefix.split('.'))))
 		},
 
 		cutLast: function(path, op) {
@@ -132,7 +166,7 @@ exports["default"] = function(context) {
 								// console.log('op came to parent');
 								context.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
 							} else {
-								context["property" + didWill + "Change"](op.p.join('.'));
+								context["property" + didWill + "Change"](utils.prefixToChildLimiations(op.p.join('.')));
 							}
 						}
 					});
@@ -154,11 +188,13 @@ exports["default"] = function(context) {
 								context.replaceContent(op.oi, true)
 							} else {
 								if (op.od != null) {
-									prefix = prefix.split('.');
-									var key = prefix.pop();
+									var fatherPrefix = prefix.split('.');
+									var key = fatherPrefix.pop();
 									var father;
-									if (father = context.get('_children.' + prefix.join('.')))
+									if (!_.isEmpty(fatherPrefix) && (father = context.get('_children.' + fatherPrefix.join('.'))))
 										father.removeKey(key);
+									else
+										context.get('_root').propertyDidChange(prefix)
 								}
 							}
 						} else {
@@ -205,7 +241,7 @@ exports["default"] = function(context) {
 										if (op.od && op.oi == null)
 											context.removeKey(_.first(newP))
 
-										context["property" + didWill + "Change"](newP.join('.'));
+										context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
 									}
 								}
 							}
@@ -213,6 +249,10 @@ exports["default"] = function(context) {
 					});
 				}
 			}
+		},
+
+		findMaxIndex: function (arr) {
+			return arr.indexOf(_.max(arr))
 		},
 
 		extractArrayPath: function(op) {
