@@ -1189,7 +1189,7 @@ define("ember-share/store",
                     case 'connected':
                       return resolve();
                     case 'connecting':
-                      return store.connection.on('connected', resolve);
+                      return store.connection.once('connected', resolve);
                     default: cb(state)
                   }
                 }
@@ -1224,12 +1224,8 @@ define("ember-share/store",
             return store.checkSocket()
               .then(function () {
                 if (store.authentication != null || store.isAuthenticated != null) {
-                  store.on('connectionEnd', function () {
-                    console.log('ending connection');
-                    store.isAuthenticated = false
-                  })
                   if (store.isAuthenticated) return resolve();
-                  if (store.isAuthenticating) return store.on('authenticated', resolve);
+                  if (store.isAuthenticating) return store.one('authenticated', resolve);
                   if (!store.isAuthenticated) return store.authentication(store.connection.id)
                   // if (!store.isAuthenticating) return reject()
                   return reject('could not authenticat')
@@ -1312,6 +1308,12 @@ define("ember-share/store",
         }
         var oldHandleMessage = sharedb.Connection.prototype.handleMessage;
         var oldSend = sharedb.Connection.prototype.send;
+
+        store.on('connectionEnd', function () {
+          console.log('ending connection');
+          store.isAuthenticated = false
+        })
+
         sharedb.Connection.prototype.send = function (msg) {
           var self = this, args = arguments;
           if (store.isAuthenticating || !store.isAuthenticated) {
@@ -1343,6 +1345,8 @@ define("ember-share/store",
                   return oldHandleMessage.apply(context, handleMessageArgs);
                 })
               .catch(function (err) {
+                store.isAuthenticating = false;
+                store.socket.end()
                 debugger
               })
           } else {
