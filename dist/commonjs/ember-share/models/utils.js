@@ -45,12 +45,13 @@ exports["default"] = function(context) {
 				prefix += '.' + key
 
 			prefix = prefix.split('.');
-			var self = this;
-			var relevantLimitIndex = this.findMaxIndex(_.map (childLimiations, function (_limit) {
+			var self = this, limiationsArray;
+
+			var relevantLimitIndex = this.findMaxIndex(limiationsArray = _.map (childLimiations, function (_limit) {
 				var limit = _limit.split('/');
 				return Math.ceil(self.matchingPaths(limit, prefix))
 			}));
-			if (relevantLimitIndex >= 0) {
+			if (relevantLimitIndex >= 0 && limiationsArray[relevantLimitIndex] > 0) {
 				var relevantLimit = childLimiations[relevantLimitIndex].split('/');
 				var orignalPrefix;
 				var result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)) );
