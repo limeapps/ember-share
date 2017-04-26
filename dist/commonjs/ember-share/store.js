@@ -68,7 +68,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
       return new Promise(function (resolve, reject) {
         return store.checkSocket()
           .then(function () {
-            if (store.authentication != null || store.isAuthenticated != null) {
+            if (store.authentication != null && store.isAuthenticated != null) {
               if (store.isAuthenticated) return resolve();
               if (store.isAuthenticating) return store.one('authenticated', resolve);
               if (!store.isAuthenticated) return store.authentication(store.connection.id)
