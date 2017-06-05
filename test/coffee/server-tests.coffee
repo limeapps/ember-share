@@ -248,7 +248,7 @@ module.exports = ->
       postJson 'op/', createDataOp(op), 0
         .then (response) ->
           assert.equal response?.msg, 'Success'
-          assert.deepEqual innerEvent.toJson(), index: 1
+          assert.deepEqual innerEvent, index: 1
           done()
         .catch done
 
@@ -339,6 +339,26 @@ module.exports = ->
         .then (response) ->
           assert.equal response?.msg, 'Success'
           assert.equal obj.get('limitedObject'), 2
+          done()
+        .catch done
+
+    it 'Child Limiations (unscheduled)', (done) ->
+
+      Obj = Ember.Object.extend
+        scheduled: (->
+          console.log 'should happen twice'
+          @get 'schedule.duties.a.unscheduled'
+        ).property 'schedule.duties.a.unscheduled'
+
+      obj = Obj.create {schedule}
+      obj.get 'scheduled'
+
+      op =  p:[ 'duties', 'a', 'unscheduled'], oi: true
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal obj.get('scheduled'), 'true'
           done()
         .catch done
 
