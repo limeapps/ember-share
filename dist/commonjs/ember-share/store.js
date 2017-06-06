@@ -132,13 +132,13 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
       if (this.get("port"))
         hostname += ':' + this.get('port');
       this.socket = new Primus(hostname);
-      console.log('connection starting');
+      // console.log('connection starting');
 
       this.socket.on('error', function error(err) {
         store.trigger('connectionError', [err]);
       });
       this.socket.on('open', function() {
-        console.log('connection open');
+        // console.log('connection open');
         store.trigger('connectionOpen');
       });
       this.socket.on('end', function() {
@@ -155,7 +155,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
     var oldSend = sharedb.Connection.prototype.send;
 
     store.on('connectionEnd', function () {
-      console.log('ending connection');
+      // console.log('ending connection');
       store.isAuthenticated = false
     })
 
@@ -177,13 +177,13 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
     sharedb.Connection.prototype.handleMessage = function(message) {
       var athenticating, handleMessageArgs;
       handleMessageArgs = arguments;
-      console.log(message.a);
+      // console.log(message.a);
       var context = this;
       if (message.a === 'init' && (typeof message.id === 'string') && message.protocol === 1 && typeof store.authenticate === 'function') {
         store.isAuthenticating = true;
         return store.authenticate(message.id)
           .then(function() {
-              console.log('authenticated !');
+              // console.log('authenticated !');
               store.isAuthenticating = false;
               store.isAuthenticated = true;
               store.trigger('authenticated')
@@ -192,7 +192,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
           .catch(function (err) {
             store.isAuthenticating = false;
             store.socket.end()
-            debugger
+            // debugger
           })
       } else {
         return oldHandleMessage.apply(this, handleMessageArgs);
@@ -281,14 +281,22 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
   },
   findRecord: function (type, id) {
     var store = this;
+    var cache = store.cache[type.pluralize()]
     return new Promise(function (resolve, reject){
-      store.findQuery(type, {_id: id})
-        .then(function(results){
-          resolve(results[0])
-        })
-        .catch(function (err){
-          reject(err)
-        });
+      try {
+        var cachedRecordAvailable = cache[0].doc.id == id && cache.length == 1
+      } catch (e) { }
+      if (cachedRecordAvailable) {
+        resolve(cache[0])
+      } else {
+        store.findQuery(type, {_id: id})
+          .then(function(results){
+            resolve(results[0])
+          })
+          .catch(function (err){
+            reject(err)
+          });
+      }
     })
   },
   findQuery: function (type, query) {
@@ -411,6 +419,11 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
   unload: function (type, doc) {
     type = type.pluralize();
     var cache = this._cacheFor(type);
+    try {
+      doc.get('doc').destroy()
+    } catch (e) {
+
+    }
     doc.destroy()
     cache.removeObject(doc)
   },
