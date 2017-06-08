@@ -188,6 +188,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
               console.log('authenticated !');
               store.isAuthenticating = false;
               store.isAuthenticated = true;
+              oldHandleMessage.apply(context, handleMessageArgs);
               store.trigger('authenticated')
             })
           .catch(function (err) {
