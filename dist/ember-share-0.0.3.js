@@ -1226,6 +1226,7 @@ define("ember-share/store",
           return new Promise(function (resolve, reject) {
             return store.checkSocket()
               .then(function () {
+                return resolve()
                 if (store.authentication != null && store.isAuthenticated != null) {
                   if (store.isAuthenticated) return resolve();
                   if (store.isAuthenticating) return store.one('authenticated', resolve);
@@ -1339,17 +1340,17 @@ define("ember-share/store",
           var context = this;
           if (message.a === 'init' && (typeof message.id === 'string') && message.protocol === 1 && typeof store.authenticate === 'function') {
             store.isAuthenticating = true;
+            oldHandleMessage.apply(context, handleMessageArgs);
             return store.authenticate(message.id)
               .then(function() {
                   console.log('authenticated !');
                   store.isAuthenticating = false;
                   store.isAuthenticated = true;
-                  oldHandleMessage.apply(context, handleMessageArgs);
                   store.trigger('authenticated')
                 })
               .catch(function (err) {
                 store.isAuthenticating = false;
-                store.socket.end()
+                // store.socket.end()
                 // debugger
               })
           } else {
