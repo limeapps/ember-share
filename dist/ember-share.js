@@ -1290,13 +1290,13 @@ define("ember-share/store",
           if (this.get("port"))
             hostname += ':' + this.get('port');
           this.socket = new Primus(hostname);
-          console.log('connection starting');
+          // console.log('connection starting');
 
           this.socket.on('error', function error(err) {
             store.trigger('connectionError', [err]);
           });
           this.socket.on('open', function() {
-            console.log('connection open');
+            // console.log('connection open');
             store.trigger('connectionOpen');
           });
           this.socket.on('end', function() {
@@ -1313,7 +1313,7 @@ define("ember-share/store",
         var oldSend = sharedb.Connection.prototype.send;
 
         store.on('connectionEnd', function () {
-          console.log('ending connection');
+          // console.log('ending connection');
           store.isAuthenticated = false
         })
 
@@ -1335,7 +1335,7 @@ define("ember-share/store",
         sharedb.Connection.prototype.handleMessage = function(message) {
           var athenticating, handleMessageArgs;
           handleMessageArgs = arguments;
-          console.log(message.a);
+          // console.log(message.a);
           var context = this;
           if (message.a === 'init' && (typeof message.id === 'string') && message.protocol === 1 && typeof store.authenticate === 'function') {
             store.isAuthenticating = true;
@@ -1344,13 +1344,13 @@ define("ember-share/store",
                   console.log('authenticated !');
                   store.isAuthenticating = false;
                   store.isAuthenticated = true;
+                  oldHandleMessage.apply(context, handleMessageArgs);
                   store.trigger('authenticated')
-                  return oldHandleMessage.apply(context, handleMessageArgs);
                 })
               .catch(function (err) {
                 store.isAuthenticating = false;
                 store.socket.end()
-                debugger
+                // debugger
               })
           } else {
             return oldHandleMessage.apply(this, handleMessageArgs);
@@ -1803,7 +1803,7 @@ define("ember-share/utils",
     		});
 
     		stream.on('readyStateChange', function() {
-    			console.log(stream.readyState);
+    			// console.log(stream.readyState);
     			setState(stream.readyState);
     		});
 

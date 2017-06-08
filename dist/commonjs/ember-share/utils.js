@@ -178,7 +178,7 @@ function patchShare() {
 		});
 
 		stream.on('readyStateChange', function() {
-			console.log(stream.readyState);
+			// console.log(stream.readyState);
 			setState(stream.readyState);
 		});
 
