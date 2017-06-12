@@ -160,29 +160,14 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
       store.isAuthenticated = false
     })
 
-    sharedb.Connection.prototype.send = function (msg) {
-      var self = this, args = arguments;
-      if (store.isAuthenticating || !store.isAuthenticated) {
-        store.checkConnection().then(function () {
-          // console.log(msg);
-          oldSend.apply(self, args)
-        })
-      }
-      else {
-        // console.log(msg);
-        oldSend.apply(self, args);
-
-      }
-    };
-
     sharedb.Connection.prototype.handleMessage = function(message) {
       var athenticating, handleMessageArgs;
       handleMessageArgs = arguments;
       // console.log(message.a);
       var context = this;
+      oldHandleMessage.apply(context, handleMessageArgs);
       if (message.a === 'init' && (typeof message.id === 'string') && message.protocol === 1 && typeof store.authenticate === 'function') {
         store.isAuthenticating = true;
-        oldHandleMessage.apply(context, handleMessageArgs);
         return store.authenticate(message.id)
           .then(function() {
               console.log('authenticated !');
@@ -196,8 +181,6 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
             // store.socket.end()
             // debugger
           })
-      } else {
-        return oldHandleMessage.apply(this, handleMessageArgs);
       }
     };
 
