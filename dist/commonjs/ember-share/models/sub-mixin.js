@@ -53,19 +53,14 @@ exports["default"] = Ember.Mixin.create({
 		var beforeFn = utils.beforeAfterChild("Will");
 		var afterFn = utils.beforeAfterChild("Did");
 
-		if (this.has('before op')) {
-			this.off('before op', this.get('beforeFn').pop())
-		}
-		if (this.has('op')) {
-			this.off('op', this.get('afterFn').pop())
-		}
+		this.removeListeners()
+
 		this.on('before op', beforeFn);
 		this.on('op', afterFn);
 
 		this.get('beforeFn').push(beforeFn);
 		this.get('afterFn').push(afterFn);
 
-	// }).on('init'),
 	}).observes('doc').on('init'),
 
 	_fullPath: function(path) {
@@ -80,8 +75,7 @@ exports["default"] = Ember.Mixin.create({
 			}
 		} else
 			return path;
-		}
-	,
+	},
 
 	deleteProperty: function(k) {
 		this.removeKey(k);
@@ -167,9 +161,12 @@ exports["default"] = Ember.Mixin.create({
 	},
 
 	removeListeners: function () {
-		this.off('before op', this.get('beforeFn'))
-		this.off('op', this.get('afterFn'))
-
+		if (this.has('before op')) {
+			this.off('before op', this.get('beforeFn').pop())
+		}
+		if (this.has('op')) {
+			this.off('op', this.get('afterFn').pop())
+		}
 	}
 
 })

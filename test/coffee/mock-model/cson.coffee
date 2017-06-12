@@ -3,7 +3,26 @@ module.exports = ->
   limitedObject:
     some:
       data: 1
-  log: [1, 2, 3]
+  log: [
+    [
+      key: 'initializing_duty_creation'
+      params :
+          "piece_count" : 27403
+          "completed_pieces" : 0
+    ]
+    [
+      key: 'initializing_duty_creation'
+      params :
+          "piece_count" : 27403
+          "completed_pieces" : 1
+    ]
+    [
+      key: 'initializing_duty_creation'
+      params :
+          "piece_count" : 27403
+          "completed_pieces" : 2
+    ]
+  ]
   preferences: [
     pref1:
       allowDeadHeads: true

@@ -89,6 +89,7 @@ exports["default"] = function(context) {
 			}
 
 			_.forEach (childrenKeys, function (key) {
+				children[key].removeListeners()
 				children[key].destroy()
 				delete children[key]
 			})

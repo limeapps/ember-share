@@ -1,6 +1,7 @@
 "use strict";
 var SubMixin = require("./sub-mixin")["default"];
 var SDBBase = require("./base")["default"];
+var Utils = require("./utils")["default"];
 
 var allButLast = function(arr) {
 	return arr.slice(0, arr.length - 1)
@@ -30,6 +31,8 @@ exports["default"] = function(SubMixin, GetterSettersMixin) {
 			var childrenKeys = Object.keys(children);
 			var prefix = Ember.get(this, '_prefix');
 			var self = this;
+			var utils = Utils(this);
+
 			var replaceLastIdx = function(str, idx) {
 				var arr = allButLast(str.split('.'))
 				return arr.join('.') + '.' + idx
@@ -45,16 +48,25 @@ exports["default"] = function(SubMixin, GetterSettersMixin) {
 			}, []);
 			_.forEach(childrenKeys, function(childKey) {
 				var idx = +_.last(childKey);
-				if (!isNaN(idx))
-					if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
-						var newIdx = idx + _removeAmt + addAmt;
-						var child = children[childKey];
-						delete children[childKey];
-						var tempChild = {};
-						tempChild[replaceLastIdx(childKey, newIdx)] = child
-						_.assign(children, tempChild);
-						Ember.set(child, '_idx', newIdx);
-					};
+				if (!isNaN(idx)) {
+					var child = children[childKey];
+					if ((_removeAmt + addAmt == 0)) {
+						if (idx >= addAmt) {
+							utils.removeChildren(childKey, true);
+							Ember.get(self, 'content').propertyWillChange('lastObject');
+						}
+					} else {
+						if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
+							var newIdx = idx + _removeAmt + addAmt;
+							delete children[childKey];
+							var tempChild = {};
+							tempChild[replaceLastIdx(childKey, newIdx)] = child;
+							_.assign(children, tempChild);
+							Ember.set(child, '_idx', newIdx);
+						};
+					}
+
+				}
 			});
 			return this._super.apply(this, arguments)
 		},

@@ -442,10 +442,10 @@ define("ember-share/models/model",
     		if (oldDoc) {
     			oldDoc.destroy();
     		}
-    		// doc.on('before op', utils.beforeAfter("Will"));
-    		doc.on('before component', utils.beforeAfter("Will"));
-    		doc.on('after component', utils.beforeAfter("Did"));
-    		// doc.on('op', utils.beforeAfter("Did"));
+    		doc.on('before op', utils.beforeAfter("Will"));
+    		// doc.on('before component', utils.beforeAfter("Will"));
+    		// doc.on('after component', utils.beforeAfter("Did"));
+    		doc.on('op', utils.beforeAfter("Did"));
 
     		this.set('oldDoc', doc);
 
@@ -465,11 +465,12 @@ define("ember-share/models/model",
     __exports__["default"] = SDBRoot
   });
 define("ember-share/models/sub-array", 
-  ["./sub-mixin","./base","exports"],
-  function(__dependency1__, __dependency2__, __exports__) {
+  ["./sub-mixin","./base","./utils","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __exports__) {
     "use strict";
     var SubMixin = __dependency1__["default"];
     var SDBBase = __dependency2__["default"];
+    var Utils = __dependency3__["default"];
 
     var allButLast = function(arr) {
     	return arr.slice(0, arr.length - 1)
@@ -499,6 +500,8 @@ define("ember-share/models/sub-array",
     			var childrenKeys = Object.keys(children);
     			var prefix = Ember.get(this, '_prefix');
     			var self = this;
+    			var utils = Utils(this);
+
     			var replaceLastIdx = function(str, idx) {
     				var arr = allButLast(str.split('.'))
     				return arr.join('.') + '.' + idx
@@ -514,16 +517,25 @@ define("ember-share/models/sub-array",
     			}, []);
     			_.forEach(childrenKeys, function(childKey) {
     				var idx = +_.last(childKey);
-    				if (!isNaN(idx))
-    					if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
-    						var newIdx = idx + _removeAmt + addAmt;
-    						var child = children[childKey];
-    						delete children[childKey];
-    						var tempChild = {};
-    						tempChild[replaceLastIdx(childKey, newIdx)] = child
-    						_.assign(children, tempChild);
-    						Ember.set(child, '_idx', newIdx);
-    					};
+    				if (!isNaN(idx)) {
+    					var child = children[childKey];
+    					if ((_removeAmt + addAmt == 0)) {
+    						if (idx >= addAmt) {
+    							utils.removeChildren(childKey, true);
+    							Ember.get(self, 'content').propertyWillChange('lastObject');
+    						}
+    					} else {
+    						if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
+    							var newIdx = idx + _removeAmt + addAmt;
+    							delete children[childKey];
+    							var tempChild = {};
+    							tempChild[replaceLastIdx(childKey, newIdx)] = child;
+    							_.assign(children, tempChild);
+    							Ember.set(child, '_idx', newIdx);
+    						};
+    					}
+
+    				}
     			});
     			return this._super.apply(this, arguments)
     		},
@@ -672,19 +684,14 @@ define("ember-share/models/sub-mixin",
     		var beforeFn = utils.beforeAfterChild("Will");
     		var afterFn = utils.beforeAfterChild("Did");
 
-    		if (this.has('before op')) {
-    			this.off('before op', this.get('beforeFn').pop())
-    		}
-    		if (this.has('op')) {
-    			this.off('op', this.get('afterFn').pop())
-    		}
+    		this.removeListeners()
+
     		this.on('before op', beforeFn);
     		this.on('op', afterFn);
 
     		this.get('beforeFn').push(beforeFn);
     		this.get('afterFn').push(afterFn);
 
-    	// }).on('init'),
     	}).observes('doc').on('init'),
 
     	_fullPath: function(path) {
@@ -699,8 +706,7 @@ define("ember-share/models/sub-mixin",
     			}
     		} else
     			return path;
-    		}
-    	,
+    	},
 
     	deleteProperty: function(k) {
     		this.removeKey(k);
@@ -786,9 +792,12 @@ define("ember-share/models/sub-mixin",
     	},
 
     	removeListeners: function () {
-    		this.off('before op', this.get('beforeFn'))
-    		this.off('op', this.get('afterFn'))
-
+    		if (this.has('before op')) {
+    			this.off('before op', this.get('beforeFn').pop())
+    		}
+    		if (this.has('op')) {
+    			this.off('op', this.get('afterFn').pop())
+    		}
     	}
 
     })
@@ -968,6 +977,7 @@ define("ember-share/models/utils",
     			}
 
     			_.forEach (childrenKeys, function (key) {
+    				children[key].removeListeners()
     				children[key].destroy()
     				delete children[key]
     			})
@@ -1225,6 +1235,7 @@ define("ember-share/store",
           return new Promise(function (resolve, reject) {
             return store.checkSocket()
               .then(function () {
+                return resolve()
                 if (store.authentication != null && store.isAuthenticated != null) {
                   if (store.isAuthenticated) return resolve();
                   if (store.isAuthenticating) return store.one('authenticated', resolve);
@@ -1338,17 +1349,17 @@ define("ember-share/store",
           var context = this;
           if (message.a === 'init' && (typeof message.id === 'string') && message.protocol === 1 && typeof store.authenticate === 'function') {
             store.isAuthenticating = true;
+            oldHandleMessage.apply(context, handleMessageArgs);
             return store.authenticate(message.id)
               .then(function() {
-                  // console.log('authenticated !');
+                  console.log('authenticated !');
                   store.isAuthenticating = false;
                   store.isAuthenticated = true;
                   store.trigger('authenticated')
-                  return oldHandleMessage.apply(context, handleMessageArgs);
                 })
               .catch(function (err) {
                 store.isAuthenticating = false;
-                store.socket.end()
+                // store.socket.end()
                 // debugger
               })
           } else {
