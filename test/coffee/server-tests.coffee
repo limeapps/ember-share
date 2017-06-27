@@ -73,90 +73,89 @@ module.exports = ->
       collection: 'schedules'
       op: op
 
-    # it 'set', (done) ->
-    #   Obj = Ember.Object.extend
-    #     schedule: schedule
-    #     cost: Ember.computed.oneWay 'schedule.duties.a.stats.cost'
-    #   obj = Obj.create()
-    #
-    #   cost = obj.get 'cost'
-    #
-    #   dutyA = schedule.get 'duties.a'
-    #   statsA = dutyA.get 'stats'
-    #
-    #   assert.equal cost, 2234
-    #
-    #   op = p:['duties', 'a', 'stats', 'cost'], oi: 666, od: 2234
-    #
-    #   postJson 'op/', createDataOp(op), 0
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       newCost = obj.get 'cost'
-    #       assert.equal newCost, 666
-    #       done()
-    #     .catch done
-    #
-    # it 'Proxy a new duty', (done) ->
-    #   oldDuty = (schedule.get 'duties.a').toJson()
-    #
-    #   newDuty =
-    #     stats:
-    #       cost: "1111"
-    #       penalty: "222"
-    #     schedule_events: ['a']
-    #
-    #   proxiedDuty = Ember.ObjectProxy.create
-    #     content: schedule.get 'duties.a'
-    #
-    #   op = p:['duties', 'a'], oi: newDuty, od: oldDuty
-    #
-    #   postJson 'op/', createDataOp(op), 0
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       changedDuty = (proxiedDuty.get 'content').toJson()
-    #       assert.deepEqual newDuty, changedDuty
-    #       done()
-    #     .catch done
-    #
-    #
-    #
-    # it 'Proxy inner properties - array', (done) ->
-    #   secondEvent =
-    #     type: 'pull in'
-    #     startTime: '11:00'
-    #     endTime: '14:00'
-    #
-    #   vord = Ember.ObjectProxy.extend
-    #     events: Ember.computed.map 'schedule_events', (event) -> event
-    #
-    #   proxiedDuty = vord.create
-    #     content: schedule.get 'duties.a'
-    #
-    #   eventLengthBefore  = proxiedDuty.get 'events.length'
-    #
-    #   op = p:['duties', 'a', 'schedule_events', '1'], ld: secondEvent
-    #
-    #   postJson 'op/', createDataOp(op), 100
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       eventLengthAfter = proxiedDuty.get 'events.length'
-    #       assert.notEqual eventLengthBefore, eventLengthAfter
-    #       done()
-    #     .catch done
-    #
-    # it 'two arrays', (done) ->
-    #   order = schedule.get 'order'
-    #   log = schedule.get 'log'
-    #
-    #   op = p:['log', 0], li: 0
-    #
-    #   postJson 'op/', createDataOp(op), 0
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       assert.equal 4, log.get('content.length')
-    #       done()
-    #     .catch done
+    it 'set', (done) ->
+      Obj = Ember.Object.extend
+        schedule: schedule
+        cost: Ember.computed.oneWay 'schedule.duties.a.stats.cost'
+      obj = Obj.create()
 
+      cost = obj.get 'cost'
+
+      dutyA = schedule.get 'duties.a'
+      statsA = dutyA.get 'stats'
+
+      assert.equal cost, 2234
+
+      op = p:['duties', 'a', 'stats', 'cost'], oi: 666, od: 2234
+
+      postJson 'op/', createDataOp(op), 0
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          newCost = obj.get 'cost'
+          assert.equal newCost, 666
+          done()
+        .catch done
+
+    it 'Proxy a new duty', (done) ->
+      oldDuty = (schedule.get 'duties.a').toJson()
+
+      newDuty =
+        stats:
+          cost: "1111"
+          penalty: "222"
+        schedule_events: ['a']
+
+      proxiedDuty = Ember.ObjectProxy.create
+        content: schedule.get 'duties.a'
+
+      op = p:['duties', 'a'], oi: newDuty, od: oldDuty
+
+      postJson 'op/', createDataOp(op), 0
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          changedDuty = (proxiedDuty.get 'content').toJson()
+          assert.deepEqual newDuty, changedDuty
+          done()
+        .catch done
+
+
+
+    it 'Proxy inner properties - array', (done) ->
+      secondEvent =
+        type: 'pull in'
+        startTime: '11:00'
+        endTime: '14:00'
+
+      vord = Ember.ObjectProxy.extend
+        events: Ember.computed.map 'schedule_events', (event) -> event
+
+      proxiedDuty = vord.create
+        content: schedule.get 'duties.a'
+
+      eventLengthBefore  = proxiedDuty.get 'events.length'
+
+      op = p:['duties', 'a', 'schedule_events', '1'], ld: secondEvent
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          eventLengthAfter = proxiedDuty.get 'events.length'
+          assert.notEqual eventLengthBefore, eventLengthAfter
+          done()
+        .catch done
+
+    it 'two arrays', (done) ->
+      order = schedule.get 'order'
+      log = schedule.get 'log'
+
+      op = p:['log', 0], li: 0
+
+      postJson 'op/', createDataOp(op), 0
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal 4, log.get('content.length')
+          done()
+        .catch done
 
     it 'many logs', (done) ->
       @timeout 5000
@@ -167,53 +166,34 @@ module.exports = ->
       obj = Ember.Object.extend
         _log: (->
           log = @get 'job.log'
-          # if (@get 'job.log.content.length') is 3
-          #   'start'
-          # else
-          console.log 'log was called'
-          a = log.get 'content.lastObject'
-          console.log "data - #{schedule.doc.data.log[2][0].params.completed_pieces}"
-          console.log "result - #{a[0].params.completed_pieces}"
-          a = log.get 'content.lastObject'
-          console.log  log.toJson()
-          console.log "result - #{log.get('2.params.completed_pieces')}"
-          a
+          if (@get 'job.log.content.length') is 3
+            'start'
+          else
+            log.get 'content.lastObject'
         ).property 'job.log.[]'
 
       obj = obj.create job: schedule
-      obj.get '_log'
+
       _.forEach logNumber, (n) ->
-        # tempObj = number: n, test: n*4
-        tempObj = [
-          key: 'initializing_duty_creation'
-          params :
-              "piece_count" : 27403
-              "completed_pieces" : n*4
-        ]
-        return
+        tempObj = number: n, test: n*4
         promises.push ->
-          postJson 'op/', createDataOp(p:['log',  2], ld: schedule.doc.data.log[2], li: tempObj), 100
+          postJson 'op/', createDataOp(p:['log', (n + 3)], li: tempObj), 100
 
       start = promises.slice 0, 4
       middle = promises.slice 4, 10
       end = promises.slice 10, 20
       startLog = null;  endLog = null ; middleLog = null
-      return done()
+
       Promise.all invoke start
 
         .then (msgs) ->
           assert.isTrue _.every msgs, (msgObj) -> msgObj.msg is 'Success'
           startLog = obj.get '_log'
-          console.log schedule
           Promise.all invoke middle
 
         .then (msgs) ->
           assert.isTrue _.every msgs, (msgObj) -> msgObj.msg is 'Success'
           middleLog =  obj.get '_log'
-          console.log schedule.get('doc.data')
-          console.log middleLog
-          console.log startLog
-
           assert.notDeepEqual startLog, middleLog
           Promise.all invoke end
 
@@ -223,7 +203,7 @@ module.exports = ->
           assert.notDeepEqual middleLog, endLog
           done()
 
-      .catch done
+        .catch done
 
     it 'get inner id', (done) ->
       Vord = Ember.Object.extend
