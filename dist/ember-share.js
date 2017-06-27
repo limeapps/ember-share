@@ -970,9 +970,11 @@ define("ember-share/models/utils",
     			if (path) {
     				childrenKeys = _.reduce(childrenKeys, function(result, key) {
     					var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
-    					if (includeSelf  && (matches >= path.split('.').length) ||
-    					   (!includeSelf && (matches >  path.split('.').length)))
-    						result.push(key);
+    					if (key == path) {
+    						if (includeSelf) result.push(key);
+    					} else {
+    						if (matches) result.push(key);
+    					}
     					return result
     				}, []);
     			}
@@ -1110,10 +1112,10 @@ define("ember-share/models/utils",
     									if (newP.join('.') == '') {
 
     										// delete self from father
-    										if (false && _.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
+    										if (_.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
     											var keyToRemove = path.pop();
     											if (_.isEmpty(path)) {
-    												utils.removeChildren(keyToRemove);
+    												utils.removeChildren(keyToRemove, true);
     											}
     											else {
     												var father = context.get('_children')[path.join('.')];

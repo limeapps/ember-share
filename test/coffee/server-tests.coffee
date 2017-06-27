@@ -40,6 +40,7 @@ module.exports = ->
         .catch cb
 
     before (done) ->
+      @timeout 5000
       Ember.Application.initializer
         name: 'api-adapter'
         initialize: (_, app) ->
@@ -57,7 +58,9 @@ module.exports = ->
       App.ApplicationController = Ember.Controller.extend
         initShareStore: (->
           ShareStore = @ShareStore
-          @ShareStore.checkConnection().then done
+          @ShareStore.checkConnection()
+            .then done
+            .catch done
         ).on 'init'
       App.initialize()
 
@@ -222,164 +225,165 @@ module.exports = ->
 
       .catch done
 
-    # it 'get inner id', (done) ->
-    #   Vord = Ember.Object.extend
-    #     id: (->
-    #       @get 'b.id'
-    #     ).property 'b.id'
-    #
-    #   proxiedDuty = Vord.create
-    #     b: schedule.get 'duties.d'
-    #
-    #   idBefore = proxiedDuty.get 'id'
-    #
-    #   op =
-    #     p: ['duties', 'd', 'id']
-    #     od: 'd'
-    #     oi: 'e'
-    #
-    #   postJson 'op/', createDataOp(op), 0
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       assert.equal response?.msg, 'Success'
-    #       idAfter = proxiedDuty.get 'id'
-    #       assert.notEqual idAfter, idBefore
-    #       done()
-    #     .catch done
-    #
-    # it 'Proxy inner properties - array - object', (done) ->
-    #   serviceEvent =
-    #     startTime: 1
-    #     endTime: 2
-    #
-    #   vord = Ember.ObjectProxy.extend
-    #     events: Ember.computed.map 'schedule_events', (event) -> event
-    #
-    #   proxiedDuty = vord.create
-    #     content: schedule.get 'duties.d'
-    #
-    #   innerEvent = proxiedDuty.get 'events.0'
-    #
-    #   op =
-    #     p: ['duties', 'd', 'schedule_events', '0', 'service_trip']
-    #     od: serviceEvent
-    #
-    #   postJson 'op/', createDataOp(op), 0
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       assert.deepEqual innerEvent, index: 1
-    #       done()
-    #     .catch done
-    #
-    # it 'Proxy replace array 1', (done) ->
-    #   @timeout 5000
-    #   startScheduleEvents = [
-    #     type: 'service'
-    #     startTime: '11:00'
-    #     endTime: '13:00'
-    #   ,
-    #     type: 'pull in'
-    #     startTime: '11:00'
-    #     endTime: '14:00'
-    #   ]
-    #
-    #   endScheduleEvents = ['a', 'b', 'c']
-    #
-    #   op =
-    #     p: ['duties', 'a', 'schedule_events']
-    #     od: startScheduleEvents
-    #     oi: endScheduleEvents
-    #
-    #
-    #   eventsWasCalledCounter = 0
-    #   Obj = Ember.Object.extend
-    #     events: (->
-    #       eventsWasCalledCounter++
-    #       @get('duty.schedule_events')
-    #     ).property 'duty.schedule_events.[]'
-    #
-    #   obj = Obj.create duty: schedule.get 'duties.a'
-    #   obj.get 'events'
-    #
-    #   postJson 'op/', createDataOp(op), 200
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       a = obj.get('events').toArray()
-    #       assert.deepEqual endScheduleEvents, a
-    #       assert.equal eventsWasCalledCounter, 2
-    #       done()
-    #     .catch done
-    #
-    # it 'Add property', (done) ->
-    #   newDuty =
-    #     id: 'f'
-    #     stats: 's'
-    #
-    #   op =  p:[ 'duties', 'f'], oi: newDuty
-    #
-    #   duties = schedule.get 'duties'
-    #
-    #   postJson 'op/', createDataOp(op), 100
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       dutyF = duties.get 'f'
-    #       assert.deepEqual dutyF.toJson(), newDuty
-    #       done()
-    #     .catch done
-    #
-    # it 'Remove property', (done) ->
-    #   dutyA = schedule.get 'duties.a'
-    #
-    #   op =  p:[ 'duties', 'a'], od: dutyA.toJson()
-    #
-    #   duties = schedule.get 'duties'
-    #
-    #   postJson 'op/', createDataOp(op), 100
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       assert.isUndefined duties.get 'a'
-    #       done()
-    #     .catch done
-    #
-    # it 'Child Limiations (Object)', (done) ->
-    #
-    #   Obj = Ember.Object.extend
-    #     limitedObject: (->
-    #       console.log 'should happen twice'
-    #       @get 'schedule.limitedObject.some.data'
-    #     ).property 'schedule.limitedObject'
-    #
-    #   obj = Obj.create {schedule}
-    #   obj.get 'limitedObject'
-    #
-    #   op =  p:[ 'limitedObject', 'some', 'data'], oi: 2, od: 1
-    #
-    #   postJson 'op/', createDataOp(op), 100
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       assert.equal obj.get('limitedObject'), 2
-    #       done()
-    #     .catch done
-    #
-    # it 'Child Limiations (unscheduled)', (done) ->
-    #
-    #   Obj = Ember.Object.extend
-    #     scheduled: (->
-    #       console.log 'should happen twice'
-    #       @get 'schedule.duties.a.unscheduled'
-    #     ).property 'schedule.duties.a.unscheduled'
-    #
-    #   obj = Obj.create {schedule}
-    #   obj.get 'scheduled'
-    #
-    #   op =  p:[ 'duties', 'a', 'unscheduled'], oi: true
-    #
-    #   postJson 'op/', createDataOp(op), 100
-    #     .then (response) ->
-    #       assert.equal response?.msg, 'Success'
-    #       assert.equal obj.get('scheduled'), 'true'
-    #       done()
-    #     .catch done
+    it 'get inner id', (done) ->
+      Vord = Ember.Object.extend
+        id: (->
+          @get 'b.id'
+        ).property 'b.id'
+
+      proxiedDuty = Vord.create
+        b: schedule.get 'duties.d'
+
+      idBefore = proxiedDuty.get 'id'
+
+      op =
+        p: ['duties', 'd', 'id']
+        od: 'd'
+        oi: 'e'
+
+      postJson 'op/', createDataOp(op), 0
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal response?.msg, 'Success'
+          idAfter = proxiedDuty.get 'id'
+          assert.notEqual idAfter, idBefore
+          done()
+        .catch done
+
+    it 'Proxy inner properties - array - object', (done) ->
+      serviceEvent =
+        startTime: 1
+        endTime: 2
+
+      vord = Ember.ObjectProxy.extend
+        events: Ember.computed.map 'schedule_events', (event) -> event
+
+      proxiedDuty = vord.create
+        content: schedule.get 'duties.d'
+
+      innerEvent = proxiedDuty.get 'events.0'
+
+      op =
+        p: ['duties', 'd', 'schedule_events', '0', 'service_trip']
+        od: serviceEvent
+
+      postJson 'op/', createDataOp(op), 0
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.deepEqual innerEvent.toJson(), index: 1
+          done()
+        .catch done
+
+    it 'Proxy replace array 1', (done) ->
+      @timeout 5000
+      startScheduleEvents = [
+        type: 'service'
+        startTime: '11:00'
+        endTime: '13:00'
+      ,
+        type: 'pull in'
+        startTime: '11:00'
+        endTime: '14:00'
+      ]
+
+      endScheduleEvents = ['a', 'b', 'c']
+
+      op =
+        p: ['duties', 'b', 'schedule_events']
+        od: startScheduleEvents
+        oi: endScheduleEvents
+
+
+      eventsWasCalledCounter = 0
+      Obj = Ember.Object.extend
+        events: (->
+          eventsWasCalledCounter++
+          @get('duty.schedule_events')
+        ).property 'duty.schedule_events.[]'
+
+      obj = Obj.create duty: schedule.get 'duties.b'
+      obj.get 'events'
+
+      postJson 'op/', createDataOp(op), 200
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          a = obj.get('events').toArray()
+          assert.deepEqual endScheduleEvents, a
+          assert.equal eventsWasCalledCounter, 2
+          done()
+        .catch done
+
+    it 'Add property', (done) ->
+      newDuty =
+        id: 'f'
+        stats: 's'
+
+      op =  p:[ 'duties', 'f'], oi: newDuty
+
+      duties = schedule.get 'duties'
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          dutyF = duties.get 'f'
+          assert.deepEqual dutyF.toJson(), newDuty
+          done()
+        .catch done
+
+    it 'Remove property', (done) ->
+      dutyA = schedule.get 'duties.a'
+
+      op =  p:[ 'duties', 'a'], od: dutyA.toJson()
+
+      duties = schedule.get 'duties'
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.isUndefined duties.get 'a'
+          done()
+        .catch done
+
+    it 'Child Limiations (Object)', (done) ->
+
+      Obj = Ember.Object.extend
+        limitedObject: (->
+          console.log 'should happen twice'
+          @get 'schedule.limitedObject.some.data'
+        ).property 'schedule.limitedObject'
+
+      obj = Obj.create {schedule}
+      obj.get 'limitedObject'
+
+      op =  p:[ 'limitedObject', 'some', 'data'], oi: 2, od: 1
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal obj.get('limitedObject'), 2
+          done()
+        .catch done
+
+    it 'Child Limiations (unscheduled)', (done) ->
+      @timeout 5000
+
+      Obj = Ember.Object.extend
+        scheduled: (->
+          console.log 'should happen twice'
+          @get 'schedule.duties.b.unscheduled'
+        ).property 'schedule.duties.b.unscheduled'
+
+      obj = Obj.create {schedule}
+      obj.get 'scheduled'
+
+      op =  p:[ 'duties', 'b', 'unscheduled'], oi: true
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal obj.get('scheduled'), 'true'
+          done()
+        .catch done
 
     # it 'Child Limiations (Array)', (done) ->
     #   Obj = Ember.Object.extend

@@ -36,4 +36,4 @@ module.exports = ShareProxy.extend
 
   limitedObject: attr()
 
-  _childLimiations: ['limitedObject', 'preferences', 'duties/*/schedule_events']
+  _childLimiations: ['limitedObject', 'preferences', 'duties/b/schedule_events']

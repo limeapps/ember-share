@@ -1,5 +1,5 @@
-# modelTests = require './model-tests'
+modelTests = require './model-tests'
 serverTests = require './server-tests'
 
-# modelTests()
+modelTests()
 serverTests()
