@@ -443,10 +443,10 @@ define("ember-share/models/model",
     		if (oldDoc) {
     			oldDoc.destroy();
     		}
-    		// doc.on('before op', utils.beforeAfter("Will"));
-    		doc.on('before component', utils.beforeAfter("Will"));
-    		doc.on('after component', utils.beforeAfter("Did"));
-    		// doc.on('op', utils.beforeAfter("Did"));
+    		doc.on('before op', utils.beforeAfter("Will"));
+    		// doc.on('before component', utils.beforeAfter("Will"));
+    		// doc.on('after component', utils.beforeAfter("Did"));
+    		doc.on('op', utils.beforeAfter("Did"));
 
     		this.set('oldDoc', doc);
 
@@ -970,11 +970,9 @@ define("ember-share/models/utils",
     			if (path) {
     				childrenKeys = _.reduce(childrenKeys, function(result, key) {
     					var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
-    					if (key == path) {
-    						if (includeSelf) result.push(key);
-    					} else {
-    						if (matches) result.push(key);
-    					}
+    					if (includeSelf  && (matches >= path.split('.').length) ||
+    					   (!includeSelf && (matches >  path.split('.').length)))
+    						result.push(key);
     					return result
     				}, []);
     			}
