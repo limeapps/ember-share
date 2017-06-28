@@ -80,10 +80,11 @@ exports["default"] = function(context) {
 
 			if (path) {
 				childrenKeys = _.reduce(childrenKeys, function(result, key) {
-					var matches = Math.ceil(utils.matchingPaths(key.split('.'), path.split('.')))
-					if (includeSelf  && (matches >= path.split('.').length) ||
-					   (!includeSelf && (matches >  path.split('.').length)))
-						result.push(key);
+					if (key == path) {
+						if (includeSelf) result.push(key);
+					} else {
+						if (key.indexOf(path) == 0) result.push(key);
+					}
 					return result
 				}, []);
 			}
