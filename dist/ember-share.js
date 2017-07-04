@@ -435,17 +435,36 @@ define("ember-share/models/model",
     		return []
     	}).property(),
 
+    	delayOp: (function () {
+    		return new Promise(function (resolve, reject) {
+    			return resolve()
+    		})
+    	}).property(),
+
     	setOpsInit: (function() {
     		var doc = this.get('doc', true);
     		var oldDoc = this.get('oldDoc');
     		var utils = Utils(this);
+    		var self = this;
+
 
     		if (oldDoc) {
     			oldDoc.destroy();
     		}
+
+    		var onComp = function (fn) {
+    			return function () {
+    				var args = arguments;
+    				var that = this;
+    				self.get('delayOp').then(function () {
+    					fn.apply(that, args)
+    				});
+    			}
+    		};
+
     		// doc.on('before op', utils.beforeAfter("Will"));
-    		doc.on('before component', utils.beforeAfter("Will"));
-    		doc.on('after component', utils.beforeAfter("Did"));
+    		doc.on('before component', onComp(utils.beforeAfter("Will")));
+    		doc.on('after component', onComp(utils.beforeAfter("Did")));
     		// doc.on('op', utils.beforeAfter("Did"));
 
     		this.set('oldDoc', doc);
@@ -455,6 +474,7 @@ define("ember-share/models/model",
 
     	willDestroy: function () {
     		var utils = Utils(this);
+    		this.get('doc').destroy();
     		this._super.apply(this, arguments)
     		utils.removeChildren();
     		console.log('destroying children');
