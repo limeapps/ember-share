@@ -264,7 +264,7 @@ define("ember-share/models/base",
     };
 
     var getPlainObject = function (value) {
-    	if (value != null && !((typeof value == 'string') || (typeof value == 'number')))
+    	if (value != null && !((typeof value == 'string') || (typeof value == 'number') || (typeof value == 'boolean')))
     		if (typeof value.toJson == 'function')
     			return value.toJson()
     		else
