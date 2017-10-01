@@ -7,13 +7,17 @@ define("ember-share",
     var Store = __dependency3__["default"];
     var Utils = __dependency4__["default"];
     var attrFunc = __dependency5__["default"];
-    var belongsTo = __dependency6__["default"];
+    var belongsToObj = __dependency6__["default"];
+
+    var belongsTo = belongsToObj.belongsTo;
+    var belongsToShare = belongsToObj.belongsToShare;
 
     var attr =  attrFunc('_sdbProps')
 
     __exports__.ShareTextMixin = ShareTextMixin;
     __exports__.ShareProxy = ShareProxy;
     __exports__.belongsTo = belongsTo;
+    __exports__.belongsToShare = belongsToShare;
     __exports__.Store = Store;
     __exports__.Utils = Utils;
     __exports__.attr = attr;
@@ -86,53 +90,40 @@ define("ember-share/belongs-to",
   ["exports"],
   function(__exports__) {
     "use strict";
-    __exports__["default"] = function(DS, modelName) {
-        // var options, type;
-        // options = {};
-        // type = null;
-        // _.forEach(arguments, function(arg) {
-        //   if (_.isPlainObject(arg)) {
-        //     return options = arg;
-        //   } else {
-        //     if (_.isString(arg)) {
-        //       return type = null;
-        //     }
-        //   }
-        // });
-        var store = this.originalStore;
-        return Ember.computed({
-          get: function(k) {
-            var ref;
+    __exports__["default"] = {
+      belongsToShare: function (DS, modelName) {
+          var store = this.ShareStore;
 
-            return store.findRecord(modelName, this.get(ref = "doc.data." + k));
-            // return  != null ? ref : Ember.get(options, 'defaultValue'));
-          },
-          set: function(p, oi, isFromServer) {
-            return oi;
-          }
-        });
-      }
+          return Ember.computed({
+            get: function(k) {
+              var ref;
+              return store.findRecord(modelName, this.get("doc.data." + k))
+              // return DS.PromiseObject.create({
+              //   promise: store.findRecord(modelName, this.get("doc.data." + k))
+              // })
+            },
+            set: function(p, oi, isFromServer) {
+              return oi;
+            }
+          });
+      },
 
+      belongsTo: function(DS, modelName) {
+          var store = this.originalStore;
+          return Ember.computed({
+            get: function(k) {
+              var ref;
 
-    // attr: ->
-    //   options = {}; type = null
-    //   _.forEach arguments, (arg) ->
-    //     if _.isPlainObject(arg)
-    //       options = arg
-    //     else
-    //       if _.isString arg
-    //         type = null
-    //
-    //   Ember.computed
-    //     get: (k) ->
-    //       @get "doc.data.#{k}" ? Ember.get(options, 'defaultValue')
-    //     set: (p, oi, isFromServer) ->
-    //       if type?
-    //         oi = window[type.toUpperCase type] oi
-    //       od = @get p
-    //       p = p.split '.'
-    //       @get('doc').submitOp [{p,od,oi}]
-    //       oi
+              return store.findRecord(modelName, this.get(ref = "doc.data." + k));
+              // return  != null ? ref : Ember.get(options, 'defaultValue'));
+            },
+            set: function(p, oi, isFromServer) {
+              return oi;
+            }
+          });
+        }
+
+    }
   });
 define("ember-share/mixins/share-text", 
   ["../utils","exports"],
@@ -383,6 +374,7 @@ define("ember-share/models/base",
     		_.forEach(SDBpropsFromObj, function(key) {
     			self.set(key, obj[key])
     		});
+    		return this;
     	},
 
     });
@@ -1190,7 +1182,8 @@ define("ember-share/store",
     /* global BCSocket:false, sharedb:false */
     var guid = __dependency1__.guid;
     var patchShare = __dependency1__.patchShare;
-
+    // import DS from 'ember-data'
+    var ObjectPromiseProxy = Ember.ObjectProxy.extend(Ember.PromiseProxyMixin);
     var Promise = Ember.RSVP.Promise;
     var socketReadyState = [
       'CONNECTING',
@@ -1320,6 +1313,9 @@ define("ember-share/store",
             hostname = this.get('protocol') + '://' + hostname;
           if (this.get("port"))
             hostname += ':' + this.get('port');
+          else {
+            hostname += ':' + 80;
+          }
           this.socket = new Primus(hostname);
           // console.log('connection starting');
 
@@ -1455,22 +1451,40 @@ define("ember-share/store",
       findRecord: function (type, id) {
         var store = this;
         var cache = store.cache[type.pluralize()]
-        return new Promise(function (resolve, reject){
-          try {
-            var cachedRecordAvailable = cache[0].doc.id == id && cache.length == 1
-          } catch (e) { }
-          if (cachedRecordAvailable) {
-            resolve(cache[0])
-          } else {
-            store.findQuery(type, {_id: id})
-              .then(function(results){
-                resolve(results[0])
-              })
-              .catch(function (err){
-                reject(err)
-              });
-          }
+        return ObjectPromiseProxy.create ({
+          promise: new Promise(function (resolve, reject){
+            try {
+              var cachedRecordAvailable = cache[0].doc.id == id && cache.length == 1
+            } catch (e) { }
+            if (cachedRecordAvailable) {
+              resolve(cache[0])
+            } else {
+              store.findQuery(type, {_id: id})
+                .then(function(results){
+                  resolve(results[0])
+                })
+                .catch(function (err){
+                  reject(err)
+                });
+            }
+          })
         })
+        // return new Promise(function (resolve, reject){
+        //   try {
+        //     var cachedRecordAvailable = cache[0].doc.id == id && cache.length == 1
+        //   } catch (e) { }
+        //   if (cachedRecordAvailable) {
+        //     resolve(cache[0])
+        //   } else {
+        //     store.findQuery(type, {_id: id})
+        //       .then(function(results){
+        //         resolve(results[0])
+        //       })
+        //       .catch(function (err){
+        //         reject(err)
+        //       });
+        //   }
+        // })
       },
       findQuery: function (type, query) {
         // type = type.pluralize()
@@ -1508,7 +1522,7 @@ define("ember-share/store",
       _getPathForType: function (type) {
         var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
         if (Adapter)
-          return Adapter.create().pathForType();
+          return Adapter.create().pathForType(type);
       },
       _getPrefix: function (type) {
         var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
@@ -1633,6 +1647,17 @@ define("ember-share/store",
             }
           });
         });
+        // return ObjectPromiseProxy.create ({
+        //   promise: new Promise(function (resolve, reject) {
+        //     doc.subscribe(function (err) {
+        //       if (err === undefined) {
+        //         Ember.run(null, resolve, doc);
+        //       } else {
+        //         Ember.run(null, reject, err);
+        //       }
+        //     });
+        //   })
+        // })
       },
       /* returns Promise for when sharedb json0 type doc is created */
       create: function (doc, data) {

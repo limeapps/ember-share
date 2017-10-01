@@ -132,6 +132,7 @@ var SDBBase = Ember.Object.extend(Ember.Evented, GetterSettersMixin, {
 		_.forEach(SDBpropsFromObj, function(key) {
 			self.set(key, obj[key])
 		});
+		return this;
 	},
 
 });

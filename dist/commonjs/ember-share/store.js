@@ -2,7 +2,8 @@
 /* global BCSocket:false, sharedb:false */
 var guid = require("./utils").guid;
 var patchShare = require("./utils").patchShare;
-
+// import DS from 'ember-data'
+var ObjectPromiseProxy = Ember.ObjectProxy.extend(Ember.PromiseProxyMixin);
 var Promise = Ember.RSVP.Promise;
 var socketReadyState = [
   'CONNECTING',
@@ -132,6 +133,9 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
         hostname = this.get('protocol') + '://' + hostname;
       if (this.get("port"))
         hostname += ':' + this.get('port');
+      else {
+        hostname += ':' + 80;
+      }
       this.socket = new Primus(hostname);
       // console.log('connection starting');
 
@@ -267,22 +271,40 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
   findRecord: function (type, id) {
     var store = this;
     var cache = store.cache[type.pluralize()]
-    return new Promise(function (resolve, reject){
-      try {
-        var cachedRecordAvailable = cache[0].doc.id == id && cache.length == 1
-      } catch (e) { }
-      if (cachedRecordAvailable) {
-        resolve(cache[0])
-      } else {
-        store.findQuery(type, {_id: id})
-          .then(function(results){
-            resolve(results[0])
-          })
-          .catch(function (err){
-            reject(err)
-          });
-      }
+    return ObjectPromiseProxy.create ({
+      promise: new Promise(function (resolve, reject){
+        try {
+          var cachedRecordAvailable = cache[0].doc.id == id && cache.length == 1
+        } catch (e) { }
+        if (cachedRecordAvailable) {
+          resolve(cache[0])
+        } else {
+          store.findQuery(type, {_id: id})
+            .then(function(results){
+              resolve(results[0])
+            })
+            .catch(function (err){
+              reject(err)
+            });
+        }
+      })
     })
+    // return new Promise(function (resolve, reject){
+    //   try {
+    //     var cachedRecordAvailable = cache[0].doc.id == id && cache.length == 1
+    //   } catch (e) { }
+    //   if (cachedRecordAvailable) {
+    //     resolve(cache[0])
+    //   } else {
+    //     store.findQuery(type, {_id: id})
+    //       .then(function(results){
+    //         resolve(results[0])
+    //       })
+    //       .catch(function (err){
+    //         reject(err)
+    //       });
+    //   }
+    // })
   },
   findQuery: function (type, query) {
     // type = type.pluralize()
@@ -320,7 +342,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
   _getPathForType: function (type) {
     var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
     if (Adapter)
-      return Adapter.create().pathForType();
+      return Adapter.create().pathForType(type);
   },
   _getPrefix: function (type) {
     var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
@@ -445,6 +467,17 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
         }
       });
     });
+    // return ObjectPromiseProxy.create ({
+    //   promise: new Promise(function (resolve, reject) {
+    //     doc.subscribe(function (err) {
+    //       if (err === undefined) {
+    //         Ember.run(null, resolve, doc);
+    //       } else {
+    //         Ember.run(null, reject, err);
+    //       }
+    //     });
+    //   })
+    // })
   },
   /* returns Promise for when sharedb json0 type doc is created */
   create: function (doc, data) {
