@@ -365,6 +365,21 @@ module.exports = ->
           done()
         .catch done
 
+    it 'test nestedArray replace', (done) ->
+      nestedArray = schedule.get 'nestedArray'
+      op =
+        p: ['nestedArray', 'arr']
+        oi: newValue = ['z', 'x', 'y']
+        od: schedule.get('nestedArray.arr').toJson()
+
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.deepEqual nestedArray.get('arr').toJson(), newValue
+          done()
+        .catch done
+
+
     # it 'Child Limiations (Array)', (done) ->
     #   Obj = Ember.Object.extend
     #     allowDeadHeads: (->

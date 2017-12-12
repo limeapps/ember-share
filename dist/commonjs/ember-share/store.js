@@ -467,17 +467,6 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
         }
       });
     });
-    // return ObjectPromiseProxy.create ({
-    //   promise: new Promise(function (resolve, reject) {
-    //     doc.subscribe(function (err) {
-    //       if (err === undefined) {
-    //         Ember.run(null, resolve, doc);
-    //       } else {
-    //         Ember.run(null, reject, err);
-    //       }
-    //     });
-    //   })
-    // })
   },
   /* returns Promise for when sharedb json0 type doc is created */
   create: function (doc, data) {

@@ -189,7 +189,8 @@ exports["default"] = function(context) {
 
 						if (op.p.join('.') == (prefix = Ember.get(context, '_prefix')) && didWill == 'Did') {
 							if  (op.oi != null) {
-								context.replaceContent(op.oi, true)
+								context["property" + didWill + "Change"]('content');
+								context.replaceContent(op.oi, true);
 							} else {
 								if (op.od != null) {
 									var fatherPrefix = prefix.split('.');

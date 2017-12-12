@@ -7,9 +7,6 @@ exports["default"] = {
         get: function(k) {
           var ref;
           return store.findRecord(modelName, this.get("doc.data." + k))
-          // return DS.PromiseObject.create({
-          //   promise: store.findRecord(modelName, this.get("doc.data." + k))
-          // })
         },
         set: function(p, oi, isFromServer) {
           return oi;

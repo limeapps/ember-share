@@ -98,9 +98,6 @@ define("ember-share/belongs-to",
             get: function(k) {
               var ref;
               return store.findRecord(modelName, this.get("doc.data." + k))
-              // return DS.PromiseObject.create({
-              //   promise: store.findRecord(modelName, this.get("doc.data." + k))
-              // })
             },
             set: function(p, oi, isFromServer) {
               return oi;
@@ -1089,7 +1086,8 @@ define("ember-share/models/utils",
 
     						if (op.p.join('.') == (prefix = Ember.get(context, '_prefix')) && didWill == 'Did') {
     							if  (op.oi != null) {
-    								context.replaceContent(op.oi, true)
+    								context["property" + didWill + "Change"]('content');
+    								context.replaceContent(op.oi, true);
     							} else {
     								if (op.od != null) {
     									var fatherPrefix = prefix.split('.');
@@ -1647,17 +1645,6 @@ define("ember-share/store",
             }
           });
         });
-        // return ObjectPromiseProxy.create ({
-        //   promise: new Promise(function (resolve, reject) {
-        //     doc.subscribe(function (err) {
-        //       if (err === undefined) {
-        //         Ember.run(null, resolve, doc);
-        //       } else {
-        //         Ember.run(null, reject, err);
-        //       }
-        //     });
-        //   })
-        // })
       },
       /* returns Promise for when sharedb json0 type doc is created */
       create: function (doc, data) {

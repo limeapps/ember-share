@@ -25,6 +25,7 @@ module.exports = ShareProxy.extend
   stops: attr()
   preferences: attr()
   order: attr()
+  nestedArray: attr()
   broken: attr 'boolean'
 
   # not in use yet
