@@ -366,16 +366,36 @@ module.exports = ->
         .catch done
 
     it 'test nestedArray replace', (done) ->
+      @timeout 4000
       nestedArray = schedule.get 'nestedArray'
-      op =
+      nestedArray.get 'arr'
+# nestedArray.
+
+      op1 =
+        p: ['nestedArray', 'arr', 3]
+        li: 'd'
+
+      op2 =
         p: ['nestedArray', 'arr']
-        oi: newValue = ['z', 'x', 'y']
+        oi: newValue = ['z', 'x','2','4']
         od: schedule.get('nestedArray.arr').toJson()
 
-      postJson 'op/', createDataOp(op), 100
+      op3 =
+        p: ['nestedArray', 'arr', 4]
+        li: 'p'
+
+      postJson 'op/', createDataOp(op1), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal nestedArray.get('arr').toJson()[3], 'd'
+          postJson 'op/', createDataOp(op2), 100
         .then (response) ->
           assert.equal response?.msg, 'Success'
           assert.deepEqual nestedArray.get('arr').toJson(), newValue
+          postJson 'op/', createDataOp(op3), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.equal nestedArray.get('arr').toJson()[4], 'p'
           done()
         .catch done
 

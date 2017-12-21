@@ -1070,8 +1070,8 @@ define("ember-share/models/utils",
 
     						if (op.p.join('.') == (prefix = Ember.get(context, '_prefix')) && didWill == 'Did') {
     							if  (op.oi != null) {
-    								context["property" + didWill + "Change"]('content');
-    								context.replaceContent(op.oi, true);
+    								var content = context.get('_root.doc.data.' + prefix);
+    								context.replaceContent(content, true);
     							} else {
     								if (op.od != null) {
     									var fatherPrefix = prefix.split('.');
@@ -1115,7 +1115,7 @@ define("ember-share/models/utils",
     											}
     										}
     										else {
-    											context["property" + didWill + "Change"]('content');
+    											// context["property" + didWill + "Change"]('content');
     										}
     									}
 
