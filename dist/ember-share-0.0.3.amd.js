@@ -1404,7 +1404,7 @@ define("ember-share/store",
         type = type.pluralize()
         var store = this;
         var prefix = this._getPrefix(type);
-        store.cache[type] = []
+        //store.cache[type] = []
 
         return this.checkConnection()
         .then(function(){
@@ -1474,7 +1474,7 @@ define("ember-share/store",
         path =  (ref = this._getPathForType(type)) ? ref : type.pluralize()
         path = this._getPrefix(type) + path;
         var store = this;
-        store.cache[type.pluralize()] = []
+        //store.cache[type.pluralize()] = []
         return this.checkConnection()
         .then(function(){
           return new Promise(function (resolve, reject) {
@@ -1559,7 +1559,7 @@ define("ember-share/store",
         return new Promise(function (resolve, reject) {
           Promise.all(promises).then(function (models){
             cache.addObjects(models);
-            resolve(cache)
+            resolve(models)
           })
           .catch(function(err){
             reject(err)
