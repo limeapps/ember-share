@@ -266,6 +266,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
         });
         query.on('remove', function (docs) {
           store._resolveModels(type, docs).then(function (models) {
+              store.unload(type, model);
               return fetchedResult.removeObjects(models);
           })
         });
