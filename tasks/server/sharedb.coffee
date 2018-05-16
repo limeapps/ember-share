@@ -19,14 +19,14 @@ module.exports = do ->
     createDirs = (dir) -> fs.mkdirSync dir unless fs.existsSync dir
     createDirs __dirname + '/public'
     createDirs jsDir
-    fs.writeFile "#{shareDbPath}-temp", "window.sharedb = require('../../../node_modules/sharedb/lib/client');", 'utf-8'
+    fs.writeFile "#{shareDbPath}-temp", "window.sharedb = require('../../../node_modules/sharedb/lib/client');", "utf-8", ->
     browserify.add "#{shareDbPath}-temp"
     browserify.bundle (err, buf) =>
-      fs.writeFile shareDbPath, (@minify buf.toString()), 'utf-8'
+      fs.writeFile shareDbPath, (@minify buf.toString()), 'utf-8', ->
 
     # primus client
     primus = new Primus(server, {transformer: 'websockets', parser:'JSON' })
-    fs.writeFile primusPath, (@minify primus.library().toString()), 'utf-8'
+    fs.writeFile primusPath, (@minify primus.library().toString()), "utf-8", ->
 
 
   init: (server, cb) ->
@@ -35,7 +35,7 @@ module.exports = do ->
 
     shareDb = new ShareDB()
 
-    primus.on 'connection', (spark) ->
+    primus.on "connection", (spark) ->
       shareDb.listen(primusStream spark)
 
     shareDb

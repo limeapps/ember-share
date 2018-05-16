@@ -397,18 +397,29 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
     // type = type.pluralize()
     var store = this;
     var cache = this._cacheFor(type.pluralize());
-    var promises = new Array(docs.length);
+    var models = [];
+    var promises = [];
     for (var i=0; i<docs.length; i++) {
-      promises[i] = this._resolveModel(type, docs[i]);
+      var doc = docs[i];
+      var model = cache.findBy('id', doc.id);
+      if (model) {
+        models.push(model)
+      } else {
+        promises.push(this._resolveModel(type, doc))
+      }
     }
     return new Promise(function (resolve, reject) {
-      Promise.all(promises).then(function (models){
-        cache.addObjects(models);
+      if (!Ember.isEmpty(promises)) {
+        Promise.all(promises).then(function (resolvedModels) {
+          cache.addObjects(resolvedModels);
+          resolve(models.concat(resolvedModels))
+        })
+        .catch(function(err){
+          reject(err)
+        })
+      } else {
         resolve(models)
-      })
-      .catch(function(err){
-        reject(err)
-      })
+      }
     })
     // return Promise.all(cache);
   },
