@@ -1,5 +1,7 @@
 module.exports = ->
   order: ['a', 'b', 'c']
+  orderObj:
+    duties: []
   nestedArray:
     arr: ['a', 'b', 'c']
   limitedObject:

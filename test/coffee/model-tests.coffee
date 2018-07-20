@@ -56,7 +56,7 @@ module.exports = ->
       assert.isUndefined schedule.get('doc.opsSent')[2]
 
     it 'New schedule', ->
-      # this tests the before each, that we actually got a new schedule when started the test
+       #this tests the before each, that we actually got a new schedule when started the test
       assert.equal schedule.get('name'), 'my mocked schedule'
 
     it 'Get nested', ->
@@ -163,6 +163,18 @@ module.exports = ->
       newOrder = schedule.get 'order'
       assert.isUndefined schedule.get('doc.opsSent')[0]
       assert.deepEqual ['a', 'b', 'c'], (toJson newOrder.get 'content')
+
+    it 'Array addObject (new)', ->
+      order = schedule.get 'orderObj'
+      order.addKey 'vehicles'
+      schedule.set 'orderObj.vehicles', []
+        #order.get('vehicles').addObject 'd'
+      vehicles = schedule.get('orderObj.vehicles')
+      vehicles.addObject 'd'
+      newOrder = schedule.get 'orderObj.vehicles'
+      assert.deepEqual [ 'd' ], (toJson newOrder.get 'content')
+       #opShouldBeSent = [ p:['order', 3], li: 'd']
+       #assert.deepEqual schedule.get('doc.opsSent')[0], opShouldBeSent
 
     it 'Array addObject (new)', ->
       order = schedule.get 'order'

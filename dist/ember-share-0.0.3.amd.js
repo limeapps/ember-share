@@ -539,7 +539,6 @@ define("ember-share/models/sub-array",
     			var removeAmt,
     				addAmt,
     				prefix = Ember.get(this, '_prefix');
-
     			var children = Ember.get(this, '_children');
     			_.forEach(this.toArray(), function(value, index) {
     				var child = children[prefix + '.' + index];
@@ -607,7 +606,11 @@ define("ember-share/models/sub-array",
     					: null))
     			}
     			this.arrayContentDidChange(start, len, objects.length);
-    			return this //._super(start, len, objects)
+          var realContent = this.get('doc.data.' + this.get('_prefix'));
+          if ((_.isEqual(objects, realContent)) && !(_.isEqual(this.get('content'),realContent))) {
+            this.onChangeDoc()
+          }
+          return this
     		},
 
     		onChangeDoc: (function () {
