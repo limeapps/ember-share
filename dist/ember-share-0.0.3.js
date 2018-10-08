@@ -504,12 +504,12 @@ define("ember-share/models/sub-array",
     			addAmt = (addAmt == null) ? 0 : addAmt;
     			if (!!(_removeAmt + addAmt))
     				Ember.get(this, 'content').propertyWillChange('lastObject');
-    			childrenKeys = _.reduce(childrenKeys, function(result, key) {
+    			var childrenKeysReduced = _.reduce(childrenKeys, function(result, key) {
     				if (allButLast(key.split('.')).join('.') == prefix)
     					result.push(key);
     				return result
     			}, []);
-    			_.forEach(childrenKeys, function(childKey) {
+    			_.forEach(childrenKeysReduced, function(childKey) {
     				var idx = +_.last(childKey);
     				if (!isNaN(idx)) {
     					var child = children[childKey];
@@ -521,6 +521,18 @@ define("ember-share/models/sub-array",
     					} else {
     						if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
     							var newIdx = idx + _removeAmt + addAmt;
+                  var newChildKey = replaceLastIdx(childKey, newIdx);
+                  childrenKeys.filter(function (childKeyA){
+                    return childKeyA.match('^' + childKey)
+                  }).reject(function(key) {
+                    return key == childKey;
+                  }).forEach(function(grandChildKey) {
+                    var grandChild = children[grandChildKey];
+                    var newGrandChildKey = grandChildKey.replace(new RegExp("^" + childKey), newChildKey)
+                    grandChild.set("_prefix", newGrandChildKey);
+                    delete children[grandChildKey];
+                    children[newGrandChildKey] = grandChild
+                  });
     							delete children[childKey];
     							var tempChild = {};
     							tempChild[replaceLastIdx(childKey, newIdx)] = child;
@@ -565,14 +577,13 @@ define("ember-share/models/sub-array",
     				p: path.concat(p)
     			};
 
-    			if (li != null)
-    				op.li = li;
+          if (typeof li != 'undefined')
+            op.li = li;
 
-    			if (ld != null)
-    				op.ld = ld;
+          if (typeof ld != 'undefined')
+            op.ld = ld;
 
     			if (li != null || ld != null) {
-    				// console.log(op);
     				return this.get('doc').submitOp([op]);
 
     			}
@@ -595,6 +606,9 @@ define("ember-share/models/sub-array",
     		},
 
     		_replace: function(start, len, objects) {
+          if (!_.isArray(objects)) {
+            objects = [ objects ]
+          }
     			this.arrayContentWillChange(start, len, objects.length);
     			var iterationLength = (len > objects.length)
     				? len
@@ -602,9 +616,14 @@ define("ember-share/models/sub-array",
     			for (var i = 0; i < iterationLength; i++) {
     				var newIndex = i + start;
     				var obj = objects.objectAt(i);
+            if (obj != null)
+              obj = obj.toJson == null ? obj : obj.toJson();
+            var oldObj = this.objectAt(newIndex);
+            if (oldObj != null)
+              oldObj = oldObj.toJson == null ? oldObj : oldObj.toJson();
     				this._submitOp(newIndex, obj, (len > i
-    					? this.objectAt(newIndex)
-    					: null))
+    					? oldObj
+    					: undefined))
     			}
     			this.arrayContentDidChange(start, len, objects.length);
           var realContent = this.get('doc.data.' + this.get('_prefix'));
@@ -1020,7 +1039,7 @@ define("ember-share/models/utils",
     				if (utils.isOpOnArray(op) && !isNaN(+ _.last(childKey.split('.'))))
     					return 0
     				else
-    					return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), op.p)
+    					return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), utils.cutLast(op.p,op))
     			});
     			var toNumber = function(strings) {
     				return _.map(strings, function(s) {
@@ -1149,10 +1168,10 @@ define("ember-share/models/utils",
     			return {
     				idx: + _.last(op.p),
     				p: _.slice(op.p, 0, op.p.length - 1).join('.'),
-    				addAmt: op.li != null
+    				addAmt: typeof op.li != 'undefined'
     					? 1
     					: 0,
-    				removeAmt: op.ld != null
+    				removeAmt: typeof op.ld != 'undefined'
     					? 1
     					: 0
     			}

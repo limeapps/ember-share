@@ -1,5 +1,15 @@
 module.exports = ->
   order: ['a', 'b', 'c']
+  rosters: [
+    id: '1'
+    task_ids: [ '1', '2', '3' ]
+  ,
+    id: '2'
+    task_ids: [ '4', '5', '6' ]
+  ,
+    id: '3'
+    task_ids: [ '7', '8', '9' ]
+  ]
   orderObj:
     duties: []
   nestedArray:

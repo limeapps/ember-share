@@ -17,6 +17,62 @@ module.exports = ->
     afterEach ->
       schedule = null
 
+    it 'reorder rosters #1', ->
+      oldIndex = 1
+      newIndex = 2
+      rosters = schedule.get 'rosters'
+      roster = rosters.objectAt oldIndex
+      rosterJson = roster.toJson()
+      rosterJson.modified = true
+      rosters.removeAt oldIndex
+      rosters.insertAt newIndex, rosterJson
+      assert.equal rosters.objectAt(0).get('id'), '1'
+      assert.deepEqual rosters.objectAt(0).get('task_ids').toArray(), [
+        '1', '2', '3'
+      ]
+      assert.equal rosters.objectAt(1).get('id'), '3'
+      assert.deepEqual rosters.objectAt(1).get('task_ids').toArray(), [
+        '7', '8', '9'
+      ]
+      assert.equal rosters.objectAt(2).get('id'), '2'
+      assert.deepEqual rosters.objectAt(2).get('task_ids').toArray(), [
+        '4', '5', '6'
+      ]
+
+    it 'reorder rosters #2', ->
+      oldIndex = 1
+      newIndex = 2
+      Roster = Ember.ObjectProxy.extend
+        events: (->
+          @get 'task_ids'
+        ).property('task_ids.[]')
+      Calendar = Ember.Object.extend
+        rosters: Ember.computed.map 'schedule.rosters', (roster) ->
+          Roster.create content: roster
+      calendar = Calendar.create { schedule }
+      calendar.get('rosters').mapBy 'events'
+      rosters = calendar.get 'schedule.rosters'
+      roster = rosters.objectAt oldIndex
+      rosterJson = roster.toJson()
+      rosterJson.modified = true
+      rosters.removeAt oldIndex
+      rosters.insertAt newIndex, rosterJson
+      calendar.get 'rosters'
+      # assertion:
+      assert.equal rosters.objectAt(0).get('id'), '1'
+      assert.deepEqual rosters.objectAt(0).get('task_ids').toArray(), [
+        '1', '2', '3'
+      ]
+      assert.equal rosters.objectAt(1).get('id'), '3'
+      assert.deepEqual rosters.objectAt(1).get('task_ids').toArray(), [
+        '7', '8', '9'
+      ]
+      assert.equal rosters.objectAt(2).get('id'), '2'
+      assert.deepEqual rosters.objectAt(2).get('task_ids').toArray(), [
+        '4', '5', '6'
+      ]
+
+
     it 'test type of attribute Date', ->
       date = schedule.get 'createdAt'
       assert.typeOf (date.getDate), 'function'
@@ -163,6 +219,18 @@ module.exports = ->
       newOrder = schedule.get 'order'
       assert.isUndefined schedule.get('doc.opsSent')[0]
       assert.deepEqual ['a', 'b', 'c'], (toJson newOrder.get 'content')
+
+    it 'Array pushObject', ->
+      order = schedule.get 'orderObj'
+      order.addKey 'vehicles'
+      schedule.set 'orderObj.vehicles', []
+        #order.get('vehicles').addObject 'd'
+      vehicles = schedule.get('orderObj.vehicles')
+      vehicles.pushObject 'd'
+      newOrder = schedule.get 'orderObj.vehicles'
+      assert.deepEqual [ 'd' ], (toJson newOrder.get 'content')
+       #opShouldBeSent = [ p:['order', 3], li: 'd']
+       #assert.deepEqual schedule.get('doc.opsSent')[0], opShouldBeSent
 
     it 'Array addObject (new)', ->
       order = schedule.get 'orderObj'

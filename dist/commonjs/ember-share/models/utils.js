@@ -135,7 +135,7 @@ exports["default"] = function(context) {
 				if (utils.isOpOnArray(op) && !isNaN(+ _.last(childKey.split('.'))))
 					return 0
 				else
-					return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), op.p)
+					return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), utils.cutLast(op.p,op))
 			});
 			var toNumber = function(strings) {
 				return _.map(strings, function(s) {
@@ -264,10 +264,10 @@ exports["default"] = function(context) {
 			return {
 				idx: + _.last(op.p),
 				p: _.slice(op.p, 0, op.p.length - 1).join('.'),
-				addAmt: op.li != null
+				addAmt: typeof op.li != 'undefined'
 					? 1
 					: 0,
-				removeAmt: op.ld != null
+				removeAmt: typeof op.ld != 'undefined'
 					? 1
 					: 0
 			}

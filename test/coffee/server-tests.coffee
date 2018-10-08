@@ -119,7 +119,6 @@ module.exports = ->
         .catch done
 
 
-
     it 'Proxy inner properties - array', (done) ->
       secondEvent =
         type: 'pull in'
