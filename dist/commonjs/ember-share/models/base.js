@@ -109,7 +109,7 @@ var SDBBase = Ember.Object.extend(Ember.Evented, GetterSettersMixin, {
   deleteProperty: function deleteProperty(k) {
     var doc = this.get('doc');
     var p = k.split('.');
-    var od = getPlainObject(this.get(k));
+    var od = getPlainObject("_root." + this.get(k));
     doc.submitOp([
       {
         p: p,
