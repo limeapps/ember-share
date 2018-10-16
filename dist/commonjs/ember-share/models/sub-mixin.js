@@ -78,8 +78,9 @@ exports["default"] = Ember.Mixin.create({
 	},
 
 	deleteProperty: function(k) {
+    var returnValue = this._super(this._fullPath(k));
 		this.removeKey(k);
-		return this._super(this._fullPath(k))
+		return returnValue;
 	},
 
 	replaceContent: function(content, noSet) {
