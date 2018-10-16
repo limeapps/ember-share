@@ -1,28 +1,31 @@
 # import model from './sdb-model'
 model = require './sdb-model'
 json = require 'node_modules/ot-json0/lib/json0'
-data = require './cson'
+defaultData = require './cson'
 
 
-module.exports = ->
+module.exports = (data) ->
+  if data?
+    data = data()
+  else
+    data = defaultData()
 
+  model.create
 
-	model.create
+    doc:
+      id: 'abcd'
+      listeners: {}
 
-		doc:
-			id: 'abcd'
-			listeners: {}
+      on: (event, fn) ->
+        @listeners[event] = [] if (_.isEmpty @listeners[event])
+        @listeners[event].push fn
 
-			on: (event, fn) ->
-				@listeners[event] = [] if (_.isEmpty @listeners[event])
-				@listeners[event].push fn
+      opsSent: []
 
-			opsSent: []
+      submitOp: (op) ->
+        _.forEach @listeners['before op'], (fn) -> fn op, true
+        json.apply @data, op
+        @opsSent.push op
+        _.forEach @listeners['op'], (fn) -> fn op, true
 
-			submitOp: (op) ->
-				_.forEach @listeners['before op'], (fn) -> fn op, true
-				json.apply @data, op
-				@opsSent.push op
-				_.forEach @listeners['op'], (fn) -> fn op, true
-
-			data: data()
+      data: data

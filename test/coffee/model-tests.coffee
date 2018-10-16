@@ -1,4 +1,4 @@
-
+cson = require './mock-model/cson'
 scheduleCreator = require './mock-model/schedule'
 
 
@@ -58,7 +58,7 @@ module.exports = ->
       rosters.removeAt oldIndex
       rosters.insertAt newIndex, rosterJson
       calendar.get 'rosters'
-      # assertion:
+       #assertion:
       assert.equal rosters.objectAt(0).get('id'), '1'
       assert.deepEqual rosters.objectAt(0).get('task_ids').toArray(), [
         '1', '2', '3'
@@ -72,6 +72,41 @@ module.exports = ->
         '4', '5', '6'
       ]
 
+    it 'reorder rosters #3', ->
+      rostersJson = cson().rosters
+      startIndex = rostersJson.length
+      _.times 30, (i) ->
+        lastRoster = _.last rostersJson
+        rostersJson.push
+          id: String startIndex + i + 1
+          task_ids: [
+            String +lastRoster.task_ids[0] + 3
+            String +lastRoster.task_ids[1] + 3
+            String +lastRoster.task_ids[2] + 3
+          ]
+      schedule = scheduleCreator (-> rosters: rostersJson)
+      console.log rostersJson
+      oldIndex = 1
+      newIndex = 2
+      rosters = schedule.get 'rosters'
+      roster = rosters.objectAt oldIndex
+      rosterJson = roster.toJson()
+      rosterJson.modified = true
+      rosters.mapBy 'task_ids'
+      rosters.removeAt oldIndex
+      rosters.insertAt newIndex, rosterJson
+      assert.equal rosters.objectAt(0).get('id'), '1'
+      assert.deepEqual rosters.objectAt(0).get('task_ids').toArray(), [
+        '1', '2', '3'
+      ]
+      assert.equal rosters.objectAt(1).get('id'), '3'
+      assert.deepEqual rosters.objectAt(1).get('task_ids').toArray(), [
+        '7', '8', '9'
+      ]
+      assert.equal rosters.objectAt(2).get('id'), '2'
+      assert.deepEqual rosters.objectAt(2).get('task_ids').toArray(), [
+        '4', '5', '6'
+      ]
 
     it 'test type of attribute Date', ->
       date = schedule.get 'createdAt'

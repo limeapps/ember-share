@@ -1,6 +1,3 @@
-# import ShareProxy from 'ember-share/models/share-proxy'
-# import attr from 'ember-share/attr'
-
 SDB = require('commonjs/ember-share')
 ShareProxy = SDB.ShareProxy
 attr = SDB.attr

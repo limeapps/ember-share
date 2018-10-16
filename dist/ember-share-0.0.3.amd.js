@@ -506,7 +506,7 @@ define("ember-share/models/sub-array",
             return result
           }, []);
           _.forEach(childrenKeysReduced, function(childKey) {
-            var idx = +_.last(childKey);
+            var idx = +_.last(childKey.split("."));
             if (!isNaN(idx)) {
               var child = children[childKey];
               if ((_removeAmt + addAmt == 0)) {
@@ -519,9 +519,7 @@ define("ember-share/models/sub-array",
                   var newIdx = idx + _removeAmt + addAmt;
                   var newChildKey = replaceLastIdx(childKey, newIdx);
                   childrenKeys.filter(function (childKeyA){
-                    return childKeyA.match('^' + childKey)
-                  }).reject(function(key) {
-                    return key == childKey;
+                    return childKeyA.match(new RegExp('^' + childKey + '\\.'))
                   }).forEach(function(grandChildKey) {
                     var grandChild = children[grandChildKey];
                     var newGrandChildKey = grandChildKey.replace(new RegExp("^" + childKey), newChildKey)
