@@ -183,7 +183,6 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
           .catch(function (err) {
             store.isAuthenticating = false;
             // store.socket.end()
-            // debugger
           })
       }
     };

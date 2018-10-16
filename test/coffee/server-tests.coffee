@@ -43,7 +43,7 @@ module.exports = ->
       @timeout 5000
       Ember.Application.initializer
         name: 'api-adapter'
-        initialize: (_, app) ->
+        initialize: (app) ->
           SDB.Store.reopen
             url: 'localhost'
             port: 3333
@@ -62,7 +62,6 @@ module.exports = ->
             .then done
             .catch done
         ).on 'init'
-      App.initialize()
 
     beforeEach createDoc
 

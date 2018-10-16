@@ -21,7 +21,6 @@ exports["default"] = {
           var ref;
 
           return store.findRecord(modelName, this.get(ref = "doc.data." + k));
-          // return  != null ? ref : Ember.get(options, 'defaultValue'));
         },
         set: function(p, oi, isFromServer) {
           return oi;

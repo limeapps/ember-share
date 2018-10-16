@@ -30,61 +30,59 @@ define("ember-share/attr",
     var sillyFunction = function (value) {return value};
 
     __exports__["default"] = function(sdbProps) {
-    	return function() {
-    		var options,
-    			type;
-    		options = {};
-    		type = null;
-    		_.forEach(arguments, function(arg) {
-    			if (_.isPlainObject(arg)) {
-    				return options = arg;
-    			} else {
-    				if (_.isString(arg)) {
-    					return type = arg.charAt(0).toUpperCase() + arg.slice(1);
-    				}
-    			}
-    		});
-    		if (type != null && window[type] != null) {
-    			var transfromToType = function (value) {
-    				var newValue = new window[type](value)
-    					if (type == 'Date')
-    						return newValue
-    					else
-    						return newValue.valueOf()
-    			};
-    		} else {
-    			var transfromToType = sillyFunction
-    		}
+      return function() {
+        var options,
+          type;
+        options = {};
+        type = null;
+        _.forEach(arguments, function(arg) {
+          if (_.isPlainObject(arg)) {
+            return options = arg;
+          } else {
+            if (_.isString(arg)) {
+              return type = arg.charAt(0).toUpperCase() + arg.slice(1);
+            }
+          }
+        });
+        if (type != null && window[type] != null) {
+          var transfromToType = function (value) {
+            var newValue = new window[type](value)
+              if (type == 'Date')
+                return newValue
+              else
+                return newValue.valueOf()
+          };
+        } else {
+          var transfromToType = sillyFunction
+        }
 
-    		return Ember.computed({
-    			get: function(k) {
-    				this.get(sdbProps, true).addObject(k);
-    				// return this.get(k, true);
-    				var isSpecielKey = _.includes([
-    					'_isSDB',
-    					'_sdbProps',
-    					'_subProps',
-    					'doc',
-    					'_prefix',
-    					'content',
-    					'_idx',
-    					'_root'
-    				], k);
+        return Ember.computed({
+          get: function(k) {
+            this.get(sdbProps, true).addObject(k);
+            var isSpecielKey = _.includes([
+              '_isSDB',
+              '_sdbProps',
+              '_subProps',
+              'doc',
+              '_prefix',
+              'content',
+              '_idx',
+              '_root'
+            ], k);
 
-    				if (isSpecielKey || this._fullPath == null)
-    					return transfromToType(this._get(k, true))
-    				else
-    					return transfromToType(this._get(this._fullPath(k)))
+            if (isSpecielKey || this._fullPath == null)
+              return transfromToType(this._get(k, true))
+            else
+              return transfromToType(this._get(this._fullPath(k)))
 
-    			},
-    			set: function(k, v, isFromServer) {
-    				// return this._super(p, oi)
-    				var path = (k == null) ? this.get('_prefix') : ((k == '_idx' || !this._fullPath)  ? k : this._fullPath(k));
-    				return this._set(path, v)
+          },
+          set: function(k, v, isFromServer) {
+            var path = (k == null) ? this.get('_prefix') : ((k == '_idx' || !this._fullPath)  ? k : this._fullPath(k));
+            return this._set(path, v)
 
-    			}
-    		});
-    	}
+          }
+        });
+      }
     }
   });
 define("ember-share/belongs-to", 
@@ -113,7 +111,6 @@ define("ember-share/belongs-to",
               var ref;
 
               return store.findRecord(modelName, this.get(ref = "doc.data." + k));
-              // return  != null ? ref : Ember.get(options, 'defaultValue'));
             },
             set: function(p, oi, isFromServer) {
               return oi;
@@ -135,104 +132,104 @@ define("ember-share/mixins/share-text",
     var isArray = __dependency1__.isArray;
     var diff = __dependency1__.diff;
     __exports__["default"] = Ember.Mixin.create({
-    	textKeys : [],
-    	triggerEvents : false,
-    	textEvents : function(){
-    		var that = this;
-    		this._textContexts = new Array(this.textKeys.length);
+      textKeys : [],
+      triggerEvents : false,
+      textEvents : function(){
+        var that = this;
+        this._textContexts = new Array(this.textKeys.length);
 
-    		// to hold the listners and remove them on destory
-    		this._handlers = new Array(this._textContexts.length * 2);
-    		for (var i = 0; i < this.textKeys.length; i++) {
-    			var key = this.textKeys[i];
-    			var subCtx = this._context.createContextAt([key]);
-    			this._handlers[key] = new Array(2);
+        // to hold the listners and remove them on destory
+        this._handlers = new Array(this._textContexts.length * 2);
+        for (var i = 0; i < this.textKeys.length; i++) {
+          var key = this.textKeys[i];
+          var subCtx = this._context.createContextAt([key]);
+          this._handlers[key] = new Array(2);
 
-    			// server changes -> local
-    			this._handlers[key].push(subCtx.on('insert',Ember.run.bind(this,this.handleInsert,key)));
-    			this._handlers[key].push(subCtx.on('delete',Ember.run.bind(this,this.handleDelete,key)));
-    			this._textContexts[key] = subCtx;
-    		}
-    	}.on('init'),
-    	setUnknownProperty: function (key, value) {
-    		if(this.textKeys.indexOf(key) >= 0)
-    		{
-    			// local changes -> server
-    			this.textOp(key,value);
-    		}
-    		else 
-    		{
-    			this._super(key,value);
-    		}
-    	},
-    	textOp : function(key,value){
+          // server changes -> local
+          this._handlers[key].push(subCtx.on('insert',Ember.run.bind(this,this.handleInsert,key)));
+          this._handlers[key].push(subCtx.on('delete',Ember.run.bind(this,this.handleDelete,key)));
+          this._textContexts[key] = subCtx;
+        }
+      }.on('init'),
+      setUnknownProperty: function (key, value) {
+        if(this.textKeys.indexOf(key) >= 0)
+        {
+          // local changes -> server
+          this.textOp(key,value);
+        }
+        else 
+        {
+          this._super(key,value);
+        }
+      },
+      textOp : function(key,value){
 
-    		// when the object was removed but has a lingering binding
-    		// propably an assertion is better
-    		if(this._context.get() === undefined)
-    		{
-    			return;
-    		}
-    		this.propertyWillChange(key);
-    		var components = diff.diff(this._cache[key] || "", value.replace(/\r\n/g, '\n'));
-    		this._cache[key] = value.replace(/\r\n/g, '\n');
-    		var changePosition = 0;
-    		for (var i = 0; i < components.length; i++) {
-    			if(components[i].added)
-    			{
-    				this._context.insert([key,changePosition],components[i].value);
-    			}
-    			else if(components[i].removed)
-    			{
-    				this._context.remove([key,changePosition],components[i].value.length);
-    			}
-    			changePosition += components[i].value.length;
-    		}
-    		this.propertyDidChange(key);
-    	},
-    	handleInsert : function (key, position, data) {
-    		this.propertyWillChange(key);
-    		if(this._cache[key] === undefined)
-    		{
-    			// force caching
-    			this.get(key);
-    		}
-    		var updatedText = this._cache[key].slice(0,position) + data + this._cache[key].slice(position);
-    		this._cache[key] = updatedText;
-    		// use trigger to update the view when in DOM
-    		if(this.triggerEvents)
-    		{
-    			this.trigger('textInsert',position,data);
-    		}
-    		this.propertyDidChange(key);
-    	},
-    	handleDelete : function (key, position, data) {
-    		if(this._cache[key] === undefined)
-    		{
-    			// force caching
-    			this.get(key);
-    		}
-    		this.propertyWillChange(key);
-    		var length = data.length;
-    		var updatedText = this._cache[key].slice(0,position) + this._cache[key].slice(position+length);
-    		this._cache[key] = updatedText;
-    		// use trigger to update the view when in DOM
-    		if(this.triggerEvents)
-    		{
-    			this.trigger('textDelete',position,data);
-    		}
-    		this.propertyDidChange(key);
-    	},
-    	willDestroy : function(){
-    		// remove the listners
-    		for (var key in this._textContexts)
-    		{
-    			this._textContexts[key].removeListener(this._handlers[key][0]);
-    			this._textContexts[key].removeListener(this._handlers[key][1]);
-    			this._textContexts[key].destroy();
-    		}
-    		this._super();
-    	}
+        // when the object was removed but has a lingering binding
+        // propably an assertion is better
+        if(this._context.get() === undefined)
+        {
+          return;
+        }
+        this.propertyWillChange(key);
+        var components = diff.diff(this._cache[key] || "", value.replace(/\r\n/g, '\n'));
+        this._cache[key] = value.replace(/\r\n/g, '\n');
+        var changePosition = 0;
+        for (var i = 0; i < components.length; i++) {
+          if(components[i].added)
+          {
+            this._context.insert([key,changePosition],components[i].value);
+          }
+          else if(components[i].removed)
+          {
+            this._context.remove([key,changePosition],components[i].value.length);
+          }
+          changePosition += components[i].value.length;
+        }
+        this.propertyDidChange(key);
+      },
+      handleInsert : function (key, position, data) {
+        this.propertyWillChange(key);
+        if(this._cache[key] === undefined)
+        {
+          // force caching
+          this.get(key);
+        }
+        var updatedText = this._cache[key].slice(0,position) + data + this._cache[key].slice(position);
+        this._cache[key] = updatedText;
+        // use trigger to update the view when in DOM
+        if(this.triggerEvents)
+        {
+          this.trigger('textInsert',position,data);
+        }
+        this.propertyDidChange(key);
+      },
+      handleDelete : function (key, position, data) {
+        if(this._cache[key] === undefined)
+        {
+          // force caching
+          this.get(key);
+        }
+        this.propertyWillChange(key);
+        var length = data.length;
+        var updatedText = this._cache[key].slice(0,position) + this._cache[key].slice(position+length);
+        this._cache[key] = updatedText;
+        // use trigger to update the view when in DOM
+        if(this.triggerEvents)
+        {
+          this.trigger('textDelete',position,data);
+        }
+        this.propertyDidChange(key);
+      },
+      willDestroy : function(){
+        // remove the listners
+        for (var key in this._textContexts)
+        {
+          this._textContexts[key].removeListener(this._handlers[key][0]);
+          this._textContexts[key].removeListener(this._handlers[key][1]);
+          this._textContexts[key].destroy();
+        }
+        this._super();
+      }
     });
   });
 define("ember-share/models/base", 
@@ -246,20 +243,20 @@ define("ember-share/models/base",
     var Utils = __dependency5__["default"];
 
     var toJson = function(obj) {
-    	return (obj == null)
-    		? void 0
-    		: JSON.parse(JSON.stringify(obj));
+      return (obj == null)
+        ? void 0
+        : JSON.parse(JSON.stringify(obj));
     };
 
     var getPlainObject = function (value) {
-    	if (value != null && !((typeof value == 'string') || (typeof value == 'number') || (typeof value == 'boolean')))
-    		if (typeof value.toJson == 'function')
-    			return value.toJson()
-    		else
-    			return toJson(value)
-    	else {
-    		return value
-    	}
+      if (value != null && !((typeof value == 'string') || (typeof value == 'number') || (typeof value == 'boolean')))
+        if (typeof value.toJson == 'function')
+          return value.toJson()
+        else
+          return toJson(value)
+      else {
+        return value
+      }
     }
 
     //
@@ -271,109 +268,109 @@ define("ember-share/models/base",
 
     var GetterSettersMixin = Ember.Mixin.create({
 
-    	_get: function(k, selfCall) {
-    		var firstValue = _.first(k.split('.'));
+      _get: function(k, selfCall) {
+        var firstValue = _.first(k.split('.'));
 
-    		if (k != '_sdbProps' && _.includes(this.get('_sdbProps'), firstValue)) {
-    			var content = this.get("doc.data." + k);
-    			return this.useSubs(content, k)
-    		} else {
-    			return this.get(k);
-    		}
-    	},
+        if (k != '_sdbProps' && _.includes(this.get('_sdbProps'), firstValue)) {
+          var content = this.get("doc.data." + k);
+          return this.useSubs(content, k)
+        } else {
+          return this.get(k);
+        }
+      },
 
-    	_set: function(path, oi) {
-    		var firstValue = _.first(path.split('.'));
-    		var self = this;
+      _set: function(path, oi) {
+        var firstValue = _.first(path.split('.'));
+        var self = this;
 
-    		if (Ember.get(this, '_prefix') == null)
-    			this.get(firstValue);
+        if (Ember.get(this, '_prefix') == null)
+          this.get(firstValue);
 
-    		if (path != '_sdbProps' && _.includes(this.get('_sdbProps'), firstValue)) {
-    			var od = getPlainObject(this._get(path));
-    			oi = getPlainObject(oi);
-    			var p = path.split('.');
-    			var utils = Utils(this);
-    			utils.removeChildren(path, true);
-    			var op = {
-    				p: p,
-    				od: od,
-    				oi: oi
-    			};
+        if (path != '_sdbProps' && _.includes(this.get('_sdbProps'), firstValue)) {
+          var od = getPlainObject(this._get(path));
+          oi = getPlainObject(oi);
+          var p = path.split('.');
+          var utils = Utils(this);
+          utils.removeChildren(path, true);
+          var op = {
+            p: p,
+            od: od,
+            oi: oi
+          };
 
-    			if (od == null)
-    				delete op.od;
+          if (od == null)
+            delete op.od;
 
-    			if (op.oi != op.od) {
-    				this.get('doc').submitOp([op], function(err) {
-    					self.get('_root', true).trigger('submitted', err);
-    				});
-    			}
+          if (op.oi != op.od) {
+            this.get('doc').submitOp([op], function(err) {
+              self.get('_root', true).trigger('submitted', err);
+            });
+          }
 
-    			return this.useSubs(oi,path);
-    		} else {
-    			return this.set(path, oi, true)
+          return this.useSubs(oi,path);
+        } else {
+          return this.set(path, oi, true)
 
-    		}
-    	}
+        }
+      }
 
     });
     var SDBBase = Ember.Object.extend(Ember.Evented, GetterSettersMixin, {
 
-    	_isSDB: true,
+      _isSDB: true,
 
-    	notifyProperties: function notifyProperties(props) {
-    		var self = this;
-    		_.forEach(props, function(prop) {
-    			self.notifyPropertyChange(prop)
-    		})
-    		return this
-    	},
+      notifyProperties: function notifyProperties(props) {
+        var self = this;
+        _.forEach(props, function(prop) {
+          self.notifyPropertyChange(prop)
+        })
+        return this
+      },
 
-    	notifyDidProperties: function notifyDidProperties(props) {
-    		var self = this;
-    		_.forEach(props, function(prop) {
-    			self.propertyDidChange(prop)
-    		})
-    		return this
-    	},
+      notifyDidProperties: function notifyDidProperties(props) {
+        var self = this;
+        _.forEach(props, function(prop) {
+          self.propertyDidChange(prop)
+        })
+        return this
+      },
 
-    	notifyWillProperties: function notifyWillProperties(props) {
-    		var self = this;
-    		_.forEach(props, function(prop) {
-    			self.propertyWillChange(prop)
-    		})
-    		return this
-    	},
+      notifyWillProperties: function notifyWillProperties(props) {
+        var self = this;
+        _.forEach(props, function(prop) {
+          self.propertyWillChange(prop)
+        })
+        return this
+      },
 
-    	deleteProperty: function deleteProperty(k) {
-    		var doc = this.get('doc');
-    		var p = k.split('.');
-    		var od = getPlainObject(this.get(k));
-    		doc.submitOp([
-    			{
-    				p: p,
-    				od: od
-    			}
-    		]);
-    	},
+      deleteProperty: function deleteProperty(k) {
+        var doc = this.get('doc');
+        var p = k.split('.');
+        var od = getPlainObject(this.get(k));
+        doc.submitOp([
+          {
+            p: p,
+            od: od
+          }
+        ]);
+      },
 
-    	setProperties: function setProperties(obj) {
-    		var sdbProps = this.get('_sdbProps');
-    		var self = this;
-    		var SDBpropsFromObj = _.filter(_.keys(obj), function(key) {
-    			self.get(key);
-    			return _.includes(sdbProps, key)
-    		});
-    		var nonSDB = _.reject(_.keys(obj), function(key) {
-    			return _.includes(sdbProps, key)
-    		});
-    		this._super(_.pick(obj, nonSDB));
-    		_.forEach(SDBpropsFromObj, function(key) {
-    			self.set(key, obj[key])
-    		});
-    		return this;
-    	},
+      setProperties: function setProperties(obj) {
+        var sdbProps = this.get('_sdbProps');
+        var self = this;
+        var SDBpropsFromObj = _.filter(_.keys(obj), function(key) {
+          self.get(key);
+          return _.includes(sdbProps, key)
+        });
+        var nonSDB = _.reject(_.keys(obj), function(key) {
+          return _.includes(sdbProps, key)
+        });
+        this._super(_.pick(obj, nonSDB));
+        _.forEach(SDBpropsFromObj, function(key) {
+          self.set(key, obj[key])
+        });
+        return this;
+      },
 
     });
 
@@ -402,56 +399,56 @@ define("ember-share/models/model",
     //
 
     var SDBRoot = SDBBase.extend({
-    	unload: function() {
-    		return this.get('_store').unload(this.get('_type'), this);
-    	},
+      unload: function() {
+        return this.get('_store').unload(this.get('_type'), this);
+      },
 
-    	id: Ember.computed.reads('doc.id'),
+      id: Ember.computed.reads('doc.id'),
 
-    	_childLimiations: (function() {
-    		return []
-    	}).property(),
+      _childLimiations: (function() {
+        return []
+      }).property(),
 
-    	_root: (function() {
-    		return this
-    	}).property(),
+      _root: (function() {
+        return this
+      }).property(),
 
-    	_children: (function() {
-    		return {}
-    	}).property(),
+      _children: (function() {
+        return {}
+      }).property(),
 
-    	_sdbProps: (function () {
-    		return []
-    	}).property(),
+      _sdbProps: (function () {
+        return []
+      }).property(),
 
-    	setOpsInit: (function() {
-    		var doc = this.get('doc', true);
-    		var oldDoc = this.get('oldDoc');
-    		var utils = Utils(this);
-    		var self = this;
-
-
-    		if (oldDoc) {
-    			oldDoc.destroy();
-    		}
-
-    		// doc.on('before op', utils.beforeAfter("Will"));
-    		doc.on('before component', utils.beforeAfter("Will"));
-    		doc.on('after component', utils.beforeAfter("Did"));
-    		// doc.on('op', utils.beforeAfter("Did"));
-
-    		this.set('oldDoc', doc);
-
-    	}).observes('doc').on('init'),
+      setOpsInit: (function() {
+        var doc = this.get('doc', true);
+        var oldDoc = this.get('oldDoc');
+        var utils = Utils(this);
+        var self = this;
 
 
-    	willDestroy: function () {
-    		var utils = Utils(this);
-    		this.get('doc').destroy();
-    		this._super.apply(this, arguments)
-    		utils.removeChildren();
-    		console.log('destroying children');
-    	}
+        if (oldDoc) {
+          oldDoc.destroy();
+        }
+
+         doc.on('before op', utils.beforeAfter("Will"));
+        //doc.on('before component', utils.beforeAfter("Will"));
+        //doc.on('after component', utils.beforeAfter("Did"));
+         doc.on('op', utils.beforeAfter("Did"));
+
+        this.set('oldDoc', doc);
+
+      }).observes('doc').on('init'),
+
+
+      willDestroy: function () {
+        var utils = Utils(this);
+        this.get('doc').destroy();
+        this._super.apply(this, arguments)
+        utils.removeChildren();
+        console.log('destroying children');
+      }
 
     });
 
@@ -467,7 +464,7 @@ define("ember-share/models/sub-array",
     var Utils = __dependency3__["default"];
 
     var allButLast = function(arr) {
-    	return arr.slice(0, arr.length - 1)
+      return arr.slice(0, arr.length - 1)
     };
 
     //
@@ -478,49 +475,49 @@ define("ember-share/models/sub-array",
     //
 
     __exports__["default"] = function(SubMixin, GetterSettersMixin) {
-    	return Ember.ArrayProxy.extend(Ember.Evented, SubMixin, GetterSettersMixin, {
+      return Ember.ArrayProxy.extend(Ember.Evented, SubMixin, GetterSettersMixin, {
 
-    		_isArrayProxy: true,
+        _isArrayProxy: true,
 
-    		arrayContentDidChange: function(startIdx, removeAmt, addAmt) {
-    			var _removeAmt = (removeAmt == null) ? 0 : removeAmt * -1;
-    			if (!!(_removeAmt + (addAmt == null) ? 0 : addAmt))
-    				Ember.get(this, 'content').propertyDidChange('lastObject');
-    			return this._super.apply(this, arguments)
-    		},
+        arrayContentDidChange: function(startIdx, removeAmt, addAmt) {
+          var _removeAmt = (removeAmt == null) ? 0 : removeAmt * -1;
+          if (!!(_removeAmt + (addAmt == null) ? 0 : addAmt))
+            Ember.get(this, 'content').propertyDidChange('lastObject');
+          return this._super.apply(this, arguments)
+        },
 
-    		arrayContentWillChange: function(startIdx, removeAmt, addAmt) {
-    			var children = Ember.get(this, '_children');
-    			var childrenKeys = Object.keys(children);
-    			var prefix = Ember.get(this, '_prefix');
-    			var self = this;
-    			var utils = Utils(this);
+        arrayContentWillChange: function(startIdx, removeAmt, addAmt) {
+          var children = Ember.get(this, '_children');
+          var childrenKeys = Object.keys(children);
+          var prefix = Ember.get(this, '_prefix');
+          var self = this;
+          var utils = Utils(this);
 
-    			var replaceLastIdx = function(str, idx) {
-    				var arr = allButLast(str.split('.'))
-    				return arr.join('.') + '.' + idx
-    			}
-    			var _removeAmt = (removeAmt == null) ? 0 : removeAmt * -1;
-    			addAmt = (addAmt == null) ? 0 : addAmt;
-    			if (!!(_removeAmt + addAmt))
-    				Ember.get(this, 'content').propertyWillChange('lastObject');
-    			var childrenKeysReduced = _.reduce(childrenKeys, function(result, key) {
-    				if (allButLast(key.split('.')).join('.') == prefix)
-    					result.push(key);
-    				return result
-    			}, []);
-    			_.forEach(childrenKeysReduced, function(childKey) {
-    				var idx = +_.last(childKey);
-    				if (!isNaN(idx)) {
-    					var child = children[childKey];
-    					if ((_removeAmt + addAmt == 0)) {
-    						if (idx >= addAmt) {
-    							utils.removeChildren(childKey, true);
-    							Ember.get(self, 'content').propertyWillChange('lastObject');
-    						}
-    					} else {
-    						if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
-    							var newIdx = idx + _removeAmt + addAmt;
+          var replaceLastIdx = function(str, idx) {
+            var arr = allButLast(str.split('.'))
+            return arr.join('.') + '.' + idx
+          }
+          var _removeAmt = (removeAmt == null) ? 0 : removeAmt * -1;
+          addAmt = (addAmt == null) ? 0 : addAmt;
+          if (!!(_removeAmt + addAmt))
+            Ember.get(this, 'content').propertyWillChange('lastObject');
+          var childrenKeysReduced = _.reduce(childrenKeys, function(result, key) {
+            if (allButLast(key.split('.')).join('.') == prefix)
+              result.push(key);
+            return result
+          }, []);
+          _.forEach(childrenKeysReduced, function(childKey) {
+            var idx = +_.last(childKey);
+            if (!isNaN(idx)) {
+              var child = children[childKey];
+              if ((_removeAmt + addAmt == 0)) {
+                if (idx >= addAmt) {
+                  utils.removeChildren(childKey, true);
+                  Ember.get(self, 'content').propertyWillChange('lastObject');
+                }
+              } else {
+                if (addAmt && (startIdx <= idx) || removeAmt && (startIdx < idx)) {
+                  var newIdx = idx + _removeAmt + addAmt;
                   var newChildKey = replaceLastIdx(childKey, newIdx);
                   childrenKeys.filter(function (childKeyA){
                     return childKeyA.match('^' + childKey)
@@ -533,49 +530,49 @@ define("ember-share/models/sub-array",
                     delete children[grandChildKey];
                     children[newGrandChildKey] = grandChild
                   });
-    							delete children[childKey];
-    							var tempChild = {};
-    							tempChild[replaceLastIdx(childKey, newIdx)] = child;
-    							_.assign(children, tempChild);
-    							Ember.set(child, '_idx', newIdx);
-    						};
-    					}
+                  delete children[childKey];
+                  var tempChild = {};
+                  tempChild[replaceLastIdx(childKey, newIdx)] = child;
+                  _.assign(children, tempChild);
+                  Ember.set(child, '_idx', newIdx);
+                };
+              }
 
-    				}
-    			});
-    			return this._super.apply(this, arguments)
-    		},
+            }
+          });
+          return this._super.apply(this, arguments)
+        },
 
-    		// useSubs:
+        // useSubs:
 
-    		replaceContent: function(content, noSet) {
-    			var removeAmt,
-    				addAmt,
-    				prefix = Ember.get(this, '_prefix');
-    			var children = Ember.get(this, '_children');
-    			_.forEach(this.toArray(), function(value, index) {
-    				var child = children[prefix + '.' + index];
-    				if (child != null)
-    					if (content[index] != null)
-    						child.replaceContent(content[index], true)
-    					else {
-    						delete children[prefix + '.' + index]
-    						child.destroy()
-    					}
-    			});
+        replaceContent: function(content, noSet) {
+          var removeAmt,
+            addAmt,
+            prefix = Ember.get(this, '_prefix');
+          var children = Ember.get(this, '_children');
+          _.forEach(this.toArray(), function(value, index) {
+            var child = children[prefix + '.' + index];
+            if (child != null)
+              if (content[index] != null)
+                child.replaceContent(content[index], true)
+              else {
+                delete children[prefix + '.' + index]
+                child.destroy()
+              }
+          });
 
-    			if (!noSet)
-    				this._set(prefix, content);
+          if (!noSet)
+            this._set(prefix, content);
 
-    			Ember.set(this, 'content', content);
-    			return this
-    		},
+          Ember.set(this, 'content', content);
+          return this
+        },
 
-    		_submitOp: function(p, li, ld) {
-    			var path = this.get('_prefix').split('.');
-    			var op = {
-    				p: path.concat(p)
-    			};
+        _submitOp: function(p, li, ld) {
+          var path = this.get('_prefix').split('.');
+          var op = {
+            p: path.concat(p)
+          };
 
           if (typeof li != 'undefined')
             op.li = li;
@@ -583,63 +580,63 @@ define("ember-share/models/sub-array",
           if (typeof ld != 'undefined')
             op.ld = ld;
 
-    			if (li != null || ld != null) {
-    				return this.get('doc').submitOp([op]);
+          if (li != null || ld != null) {
+            return this.get('doc').submitOp([op]);
 
-    			}
-    		},
+          }
+        },
 
-    		objectAt: function(idx) {
-    			var content = this._super(idx);
-    			var prefix = this.get('_prefix');
-    			return this.useSubs(content, prefix, idx)
-    		},
+        objectAt: function(idx) {
+          var content = this._super(idx);
+          var prefix = this.get('_prefix');
+          return this.useSubs(content, prefix, idx)
+        },
 
-    		toJson: function() {
-    			var self = this;
-    			return _.map(this.toArray(), function(value) {
-    				if ((typeof value == 'string') || (typeof value == 'number'))
-    					return value
-    				else
-    					return value.toJson()
-    			})
-    		},
+        toJson: function() {
+          var self = this;
+          return _.map(this.toArray(), function(value) {
+            if ((typeof value == 'string') || (typeof value == 'number'))
+              return value
+            else
+              return value.toJson()
+          })
+        },
 
-    		_replace: function(start, len, objects) {
+        _replace: function(start, len, objects) {
           if (!_.isArray(objects)) {
             objects = [ objects ]
           }
-    			this.arrayContentWillChange(start, len, objects.length);
-    			var iterationLength = (len > objects.length)
-    				? len
-    				: objects.length;
-    			for (var i = 0; i < iterationLength; i++) {
-    				var newIndex = i + start;
-    				var obj = objects.objectAt(i);
+          this.arrayContentWillChange(start, len, objects.length);
+          var iterationLength = (len > objects.length)
+            ? len
+            : objects.length;
+          for (var i = 0; i < iterationLength; i++) {
+            var newIndex = i + start;
+            var obj = objects.objectAt(i);
             if (obj != null)
               obj = obj.toJson == null ? obj : obj.toJson();
             var oldObj = this.objectAt(newIndex);
             if (oldObj != null)
               oldObj = oldObj.toJson == null ? oldObj : oldObj.toJson();
-    				this._submitOp(newIndex, obj, (len > i
-    					? oldObj
-    					: undefined))
-    			}
-    			this.arrayContentDidChange(start, len, objects.length);
+            this._submitOp(newIndex, obj, (len > i
+              ? oldObj
+              : undefined))
+          }
+          this.arrayContentDidChange(start, len, objects.length);
           var realContent = this.get('doc.data.' + this.get('_prefix'));
           if ((_.isEqual(objects, realContent)) && !(_.isEqual(this.get('content'),realContent))) {
             this.onChangeDoc()
           }
           return this
-    		},
+        },
 
-    		onChangeDoc: (function () {
-    			// debugger
-    			// this.set ('content', this.get('doc.data.' + this.get('_prefix')))
-    			// Ember.run.next (this, function () P{})
-    			this.replaceContent(this.get('doc.data.' + this.get('_prefix')), true)
-    		}).observes('doc')
-    	});
+        onChangeDoc: (function () {
+          // debugger
+          // this.set ('content', this.get('doc.data.' + this.get('_prefix')))
+          // Ember.run.next (this, function () P{})
+          this.replaceContent(this.get('doc.data.' + this.get('_prefix')), true)
+        }).observes('doc')
+      });
     }
   });
 define("ember-share/models/sub-mixin", 
@@ -650,7 +647,7 @@ define("ember-share/models/sub-mixin",
     var attrs = __dependency2__["default"];
 
     var allButLast = function(arr) {
-    	return arr.slice(0, arr.length - 1)
+      return arr.slice(0, arr.length - 1)
     };
 
     //
@@ -662,160 +659,160 @@ define("ember-share/models/sub-mixin",
 
     __exports__["default"] = Ember.Mixin.create({
 
-    	_children: (function() {
-    		return {}
-    	}).property(),
+      _children: (function() {
+        return {}
+      }).property(),
 
-    	_sdbProps: (function() {
-    		return []
-    	}).property(),
+      _sdbProps: (function() {
+        return []
+      }).property(),
 
-    	_subProps: (function() {
-    		return []
-    	}).property(),
+      _subProps: (function() {
+        return []
+      }).property(),
 
-    	doc: Ember.computed.reads('_root.doc'),
+      doc: Ember.computed.reads('_root.doc'),
 
-    	createInnerAttrs: (function() {
-    		var tempContent = Ember.get(this, 'tempContent');
-    		var self = this;
-    		var attr = attrs('_subProps');
-    		var keys = [];
+      createInnerAttrs: (function() {
+        var tempContent = Ember.get(this, 'tempContent');
+        var self = this;
+        var attr = attrs('_subProps');
+        var keys = [];
 
-    		_.forEach(tempContent, function(value, key) {
-    			keys.push(key);
-    			Ember.defineProperty(self, key, attr());
-    		})
+        _.forEach(tempContent, function(value, key) {
+          keys.push(key);
+          Ember.defineProperty(self, key, attr());
+        })
 
-    		Ember.get(this, '_subProps').addObjects(keys);
-    		delete this['tempContent'];
-    	}).on('init'),
+        Ember.get(this, '_subProps').addObjects(keys);
+        delete this['tempContent'];
+      }).on('init'),
 
-    	beforeFn: (function (){return []}).property(),
-    	afterFn: (function (){return []}).property(),
+      beforeFn: (function (){return []}).property(),
+      afterFn: (function (){return []}).property(),
 
-    	activateListeners: (function() {
-    		var utils = Utils(this);
+      activateListeners: (function() {
+        var utils = Utils(this);
 
-    		var beforeFn = utils.beforeAfterChild("Will");
-    		var afterFn = utils.beforeAfterChild("Did");
+        var beforeFn = utils.beforeAfterChild("Will");
+        var afterFn = utils.beforeAfterChild("Did");
 
-    		this.removeListeners()
+        this.removeListeners()
 
-    		this.on('before op', beforeFn);
-    		this.on('op', afterFn);
+        this.on('before op', beforeFn);
+        this.on('op', afterFn);
 
-    		this.get('beforeFn').push(beforeFn);
-    		this.get('afterFn').push(afterFn);
+        this.get('beforeFn').push(beforeFn);
+        this.get('afterFn').push(afterFn);
 
-    	}).observes('doc').on('init'),
+      }).observes('doc').on('init'),
 
-    	_fullPath: function(path) {
-    		var prefix = Ember.get(this, '_prefix');
-    		var idx = Ember.get(this, '_idx');
+      _fullPath: function(path) {
+        var prefix = Ember.get(this, '_prefix');
+        var idx = Ember.get(this, '_idx');
 
-    		if (prefix) {
-    			if (idx != null) {
-    				return prefix + '.' + idx + '.' + path
-    			} else {
-    				return prefix + '.' + path;
-    			}
-    		} else
-    			return path;
-    	},
+        if (prefix) {
+          if (idx != null) {
+            return prefix + '.' + idx + '.' + path
+          } else {
+            return prefix + '.' + path;
+          }
+        } else
+          return path;
+      },
 
-    	deleteProperty: function(k) {
+      deleteProperty: function(k) {
         var returnValue = this._super(this._fullPath(k));
-    		this.removeKey(k);
-    		return returnValue;
-    	},
+        this.removeKey(k);
+        return returnValue;
+      },
 
-    	replaceContent: function(content, noSet) {
-    		this.notifyWillProperties(this.get('_subProps').toArray());
-    		var prefix = this.get('_prefix');
-    		var idx = this.get('_idx')
-    		var path = (idx == null) ? prefix : prefix + '.' + idx
+      replaceContent: function(content, noSet) {
+        this.notifyWillProperties(this.get('_subProps').toArray());
+        var prefix = this.get('_prefix');
+        var idx = this.get('_idx')
+        var path = (idx == null) ? prefix : prefix + '.' + idx
 
-    		if (!noSet)
-    			this._set(path, content);
+        if (!noSet)
+          this._set(path, content);
 
-    		var self = this;
-    		var utils = Utils(this);
+        var self = this;
+        var utils = Utils(this);
 
-    		utils.removeChildren(path);
+        utils.removeChildren(path);
 
-    		if (_.isEmpty(Object.keys(this))) {
-    			Ember.setProperties(this, {tempContent: content});
-    			this.createInnerAttrs();
+        if (_.isEmpty(Object.keys(this))) {
+          Ember.setProperties(this, {tempContent: content});
+          this.createInnerAttrs();
 
-    			var notifyFather = function (prefixArr, keys) {
-    				if (_.isEmpty(prefixArr))
-    					self.get('_root').notifyPropertyChange(keys.join('.'))
-    				else {
-    					var child = self.get['_children'][prefixArr.join('.')]
-    					if (child != null)
-    						child.notifyPropertyChange(prefixArr.join('.') + '.' + keys.join('.'))
-    					else
-    						keys.push(prefixArr.pop());
-    						notifyFather(prefixArr, keys);
-    				}
-    			};
-    			var prefixArr = prefix.split('.')
-    			var key = prefixArr.pop()
+          var notifyFather = function (prefixArr, keys) {
+            if (_.isEmpty(prefixArr))
+              self.get('_root').notifyPropertyChange(keys.join('.'))
+            else {
+              var child = self.get['_children'][prefixArr.join('.')]
+              if (child != null)
+                child.notifyPropertyChange(prefixArr.join('.') + '.' + keys.join('.'))
+              else
+                keys.push(prefixArr.pop());
+                notifyFather(prefixArr, keys);
+            }
+          };
+          var prefixArr = prefix.split('.')
+          var key = prefixArr.pop()
 
-    			notifyFather(prefixArr, [key]);
-    		}
-    		else {
-    			if (_.isPlainObject(content))
-    				var toDelete = _.difference(Object.keys(this), Object.keys(content))
-    			else
-    				var toDelete = Object.keys(this);
+          notifyFather(prefixArr, [key]);
+        }
+        else {
+          if (_.isPlainObject(content))
+            var toDelete = _.difference(Object.keys(this), Object.keys(content))
+          else
+            var toDelete = Object.keys(this);
 
-    			_.forEach(toDelete, function(prop) {
-    				delete self[prop]
-    			});
-    			this.get('_subProps').removeObjects(toDelete);
-    			Ember.setProperties(this, {tempContent: content});
-    			this.createInnerAttrs();
-    			this.notifyDidProperties(this.get('_subProps').toArray());
-    		}
+          _.forEach(toDelete, function(prop) {
+            delete self[prop]
+          });
+          this.get('_subProps').removeObjects(toDelete);
+          Ember.setProperties(this, {tempContent: content});
+          this.createInnerAttrs();
+          this.notifyDidProperties(this.get('_subProps').toArray());
+        }
 
-    		return this
-    	},
+        return this
+      },
 
-    	toJson: function() {
-    		var idx = Ember.get(this, '_idx'),
-    			k = Ember.get(this, '_prefix');
-    		var path = (idx == null)
-    			? k
-    			: (k + '.' + idx);
-    		return this.get('doc.data.' + path);
-    	},
+      toJson: function() {
+        var idx = Ember.get(this, '_idx'),
+          k = Ember.get(this, '_prefix');
+        var path = (idx == null)
+          ? k
+          : (k + '.' + idx);
+        return this.get('doc.data.' + path);
+      },
 
-    	addKey: function (key) {
-    		var attr = attrs('_subProps');
-    		if (!(this.get('_subProps').indexOf(key) > -1))
-    			Ember.defineProperty(this, key, attr());
-    		return this
-    	},
+      addKey: function (key) {
+        var attr = attrs('_subProps');
+        if (!(this.get('_subProps').indexOf(key) > -1))
+          Ember.defineProperty(this, key, attr());
+        return this
+      },
 
-    	removeKey: function (key) {
-    		var attr = attrs('_subProps');
-    		var utils = Utils(this);
-    		utils.removeChildren(key, true);
-    		this.get('_subProps').removeObject(key);
-    		delete this[key];
-    		return this
-    	},
+      removeKey: function (key) {
+        var attr = attrs('_subProps');
+        var utils = Utils(this);
+        utils.removeChildren(key, true);
+        this.get('_subProps').removeObject(key);
+        delete this[key];
+        return this
+      },
 
-    	removeListeners: function () {
-    		if (this.has('before op')) {
-    			this.off('before op', this.get('beforeFn').pop())
-    		}
-    		if (this.has('op')) {
-    			this.off('op', this.get('afterFn').pop())
-    		}
-    	}
+      removeListeners: function () {
+        if (this.has('before op')) {
+          this.off('before op', this.get('beforeFn').pop())
+        }
+        if (this.has('op')) {
+          this.off('op', this.get('afterFn').pop())
+        }
+      }
 
     })
   });
@@ -843,61 +840,60 @@ define("ember-share/models/use-subs-mixin",
     var subs = __dependency1__["default"];
     var Utils = __dependency2__["default"];__exports__["default"] = Ember.Mixin.create({
 
-    	useSubs: function useSubs(content, k, idx) {
-    		var utils = Utils(this);
+      useSubs: function useSubs(content, k, idx) {
+        var utils = Utils(this);
 
-    		if (utils.matchChildToLimitations(k))
-    			return content;
+        if (utils.matchChildToLimitations(k))
+          return content;
 
-    		if (_.isPlainObject(content)) {
-    			content = {
-    				tempContent: content
-    			};
-    			var use = 'object'
+        if (_.isPlainObject(content)) {
+          content = {
+            tempContent: content
+          };
+          var use = 'object'
 
-    		} else if (_.isArray(content)) {
-    			content = {
-    				content: content
-    			};
-    			var use = 'array';
-    		}
-    		if (use) {
-    			var child,
-    				_idx;
-    			var path = (idx == null) ? k : (k + '.' + idx);
-    			var ownPath = Ember.get(this, '_prefix');
-    			if ((_idx = Ember.get(this, '_idx')) != null)
-    				ownPath += '.' + _idx;
-    			if (path == ownPath) {
-    				return this;
-    			}
+        } else if (_.isArray(content)) {
+          content = {
+            content: content
+          };
+          var use = 'array';
+        }
+        if (use) {
+          var child,
+            _idx;
+          var path = (idx == null) ? k : (k + '.' + idx);
+          var ownPath = Ember.get(this, '_prefix');
+          if ((_idx = Ember.get(this, '_idx')) != null)
+            ownPath += '.' + _idx;
+          if (path == ownPath) {
+            return this;
+          }
 
-    			var children = Ember.get(this, '_children');
-    			var childrenKeys = Object.keys(children);
+          var children = Ember.get(this, '_children');
+          var childrenKeys = Object.keys(children);
 
-    			if (_.includes(childrenKeys, path))
-    				return children[path]
-    			else
-    				child = {};
+          if (_.includes(childrenKeys, path))
+            return children[path]
+          else
+            child = {};
 
-    			var sub = subs[use].extend({
-    				// doc: this.get('doc'),
-    				_children: Ember.get(this, '_children'),
-    				_prefix: k,
-    				_idx: idx,
-    				_sdbProps: Ember.get(this, '_sdbProps'),
-    				_root: Ember.get(this,'_root')
-    			});
+          var sub = subs[use].extend({
+            _children: Ember.get(this, '_children'),
+            _prefix: k,
+            _idx: idx,
+            _sdbProps: Ember.get(this, '_sdbProps'),
+            _root: Ember.get(this,'_root')
+          });
 
-    			sub = sub.create(content);
+          sub = sub.create(content);
 
-    			child[path] = sub;
-    			_.assign(Ember.get(this, '_children'), child);
+          child[path] = sub;
+          _.assign(Ember.get(this, '_children'), child);
 
-    			return sub
-    		} else
-    			return content
-    	}
+          return sub
+        } else
+          return content
+      }
     })
   });
 define("ember-share/models/utils", 
@@ -906,279 +902,274 @@ define("ember-share/models/utils",
     "use strict";
     __exports__["default"] = function(context) {
 
-    	return {
+      return {
 
-    		isOpOnArray: function(op) {
-    			return (op.ld != null) || (op.lm != null) || (op.li != null)
-    		},
+        isOpOnArray: function(op) {
+          return (op.ld != null) || (op.lm != null) || (op.li != null)
+        },
 
-    		matchingPaths: function(as, bs) {
-    			var counter = 0;
-    			var higherLength = (as.length > bs.length)
-    				? as.length
-    				: bs.length
-    			while ((as[counter] == '*' || as[counter] == bs[counter]) && counter < higherLength) {
-    				counter++
-    			}
-    			return counter - (as.length / 1000)
-    		},
+        matchingPaths: function(as, bs) {
+          var counter = 0;
+          var higherLength = (as.length > bs.length)
+            ? as.length
+            : bs.length
+          while ((as[counter] == '*' || as[counter] == bs[counter]) && counter < higherLength) {
+            counter++
+          }
+          return counter - (as.length / 1000)
+        },
 
-    		matchChildToLimitations: function (key) {
-    			var childLimiations = Ember.get(context, '_root._childLimiations');
-    			var prefix = Ember.get(context, '_prefix')
+        matchChildToLimitations: function (key) {
+          var childLimiations = Ember.get(context, '_root._childLimiations');
+          var prefix = Ember.get(context, '_prefix')
 
-    			if (prefix == null || key.match(prefix))
-    				prefix = key
-    			else
-    				prefix += '.' + key
+          if (prefix == null || key.match(prefix))
+            prefix = key
+          else
+            prefix += '.' + key
 
-    			prefix = prefix.split('.');
-    			var self = this;
-    			return _.some (childLimiations, function (_limit) {
-    				var limit = _limit.split('/');
-    				return prefix.length == limit.length && Math.ceil(self.matchingPaths(limit, prefix)) == prefix.length
-    			})
-    		},
+          prefix = prefix.split('.');
+          var self = this;
+          return _.some (childLimiations, function (_limit) {
+            var limit = _limit.split('/');
+            return prefix.length == limit.length && Math.ceil(self.matchingPaths(limit, prefix)) == prefix.length
+          })
+        },
 
-    		prefixToChildLimiations: function (key) {
-    			var childLimiations = Ember.get(context, '_root._childLimiations');
-    			var prefix = Ember.get(context, '_prefix')
+        prefixToChildLimiations: function (key) {
+          var childLimiations = Ember.get(context, '_root._childLimiations');
+          var prefix = Ember.get(context, '_prefix')
 
-    			if (prefix == null || key.match(prefix))
-    				prefix = key
-    			else
-    				prefix += '.' + key
+          if (prefix == null || key.match(prefix))
+            prefix = key
+          else
+            prefix += '.' + key
 
-    			prefix = prefix.split('.');
-    			var self = this, limiationsArray;
+          prefix = prefix.split('.');
+          var self = this, limiationsArray;
 
-    			var relevantLimitIndex = this.findMaxIndex(limiationsArray = _.map (childLimiations, function (_limit) {
-    				var limit = _limit.split('/');
-    				var result = Math.ceil(self.matchingPaths(limit, prefix))
-    				return result < limit.length ? 0 : result
-    			}));
-    			if (relevantLimitIndex >= 0 && limiationsArray[relevantLimitIndex] > 0) {
-    				var relevantLimit = childLimiations[relevantLimitIndex].split('/');
-    				var orignalPrefix;
-    				var result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)) );
-    				if (orignalPrefix = Ember.get(context, '_prefix')) {
-    					orignalPrefix = orignalPrefix.split('.');
-    					return result.slice(orignalPrefix.length)
-    				} else
-    					return result.join('.');
-    			}
-    			else {
-    				return key;
-    			}
+          var relevantLimitIndex = this.findMaxIndex(limiationsArray = _.map (childLimiations, function (_limit) {
+            var limit = _limit.split('/');
+            var result = Math.ceil(self.matchingPaths(limit, prefix))
+            return result < limit.length ? 0 : result
+          }));
+          if (relevantLimitIndex >= 0 && limiationsArray[relevantLimitIndex] > 0) {
+            var relevantLimit = childLimiations[relevantLimitIndex].split('/');
+            var orignalPrefix;
+            var result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)) );
+            if (orignalPrefix = Ember.get(context, '_prefix')) {
+              orignalPrefix = orignalPrefix.split('.');
+              return result.slice(orignalPrefix.length)
+            } else
+              return result.join('.');
+          }
+          else {
+            return key;
+          }
 
-    		},
+        },
 
-    		removeChildren: function (path, includeSelf) {
-    			var children = Ember.get(context, '_children');
-    			var childrenKeys = Object.keys(children);
-    			var prefix = context.get('_prefix');
-    			var utils = this;
+        removeChildren: function (path, includeSelf) {
+          var children = Ember.get(context, '_children');
+          var childrenKeys = Object.keys(children);
+          var prefix = context.get('_prefix');
+          var utils = this;
 
-    			if ((prefix != null) && path && path.indexOf(prefix) != 0) {
-    				path = prefix + '.' + path
-    			}
+          if ((prefix != null) && path && path.indexOf(prefix) != 0) {
+            path = prefix + '.' + path
+          }
 
-    			if (path) {
-    				childrenKeys = _.reduce(childrenKeys, function(result, key) {
-    					if (key == path) {
-    						if (includeSelf) result.push(key);
-    					} else {
-    						if (key.indexOf(path) == 0) result.push(key);
-    					}
-    					return result
-    				}, []);
-    			}
+          if (path) {
+            childrenKeys = _.reduce(childrenKeys, function(result, key) {
+              if (key == path) {
+                if (includeSelf) result.push(key);
+              } else {
+                if (key.indexOf(path) == 0) result.push(key);
+              }
+              return result
+            }, []);
+          }
 
-    			_.forEach (childrenKeys, function (key) {
-    				children[key].removeListeners()
-    				children[key].destroy()
-    				delete children[key]
-    			})
-    		},
+          _.forEach (childrenKeys, function (key) {
+            children[key].removeListeners()
+            children[key].destroy()
+            delete children[key]
+          })
+        },
 
-    		comparePathToPrefix: function(path, prefix) {
-    			return Boolean(Math.ceil(this.matchingPaths(path.split('.'), prefix.split('.'))))
-    		},
+        comparePathToPrefix: function(path, prefix) {
+          return Boolean(Math.ceil(this.matchingPaths(path.split('.'), prefix.split('.'))))
+        },
 
-    		cutLast: function(path, op) {
-    			var tempPath;
-    			if (this.isOpOnArray(op) && !isNaN(+ _.last(path))) {
-    				tempPath = _.clone(path);
-    				tempPath.pop();
-    			}
-    			return (tempPath)
-    				? tempPath
-    				: path
-    		},
+        cutLast: function(path, op) {
+          var tempPath;
+          if (this.isOpOnArray(op) && !isNaN(+ _.last(path))) {
+            tempPath = _.clone(path);
+            tempPath.pop();
+          }
+          return (tempPath)
+            ? tempPath
+            : path
+        },
 
-    		comparePathToChildren: function(path, op) {
-    			var utils = this;
-    			var children = Ember.get(context, '_children');
-    			var childrenKeys = Object.keys(children);
-    			var hasChildren = _.some(childrenKeys, function(childKey) {
-    				var pathsCounter = utils.matchingPaths(childKey.split('.'), utils.cutLast(path, op))
-    				return Math.ceil(pathsCounter) == childKey.split('.').length
-    			});
-    			return !Ember.isEmpty(childrenKeys) && hasChildren
-    		},
+        comparePathToChildren: function(path, op) {
+          var utils = this;
+          var children = Ember.get(context, '_children');
+          var childrenKeys = Object.keys(children);
+          var hasChildren = _.some(childrenKeys, function(childKey) {
+            var pathsCounter = utils.matchingPaths(childKey.split('.'), utils.cutLast(path, op))
+            return Math.ceil(pathsCounter) == childKey.split('.').length
+          });
+          return !Ember.isEmpty(childrenKeys) && hasChildren
+        },
 
-    		triggerChildren: function(didWill, op, isFromClient) {
-    			var newP = _.clone(op.p);
-    			// var children = Ember.get(context, '_children');
-    			var children = context.get('_children');
-    			var childrenKeys = Object.keys(children);
-    			if (Ember.isEmpty(childrenKeys))
-    				return;
-    			var child,
-    				utils = this;
-    			var counterToChild = _.mapKeys(children, function(v, childKey) {
-    				if (utils.isOpOnArray(op) && !isNaN(+ _.last(childKey.split('.'))))
-    					return 0
-    				else
-    					return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), utils.cutLast(op.p,op))
-    			});
-    			var toNumber = function(strings) {
-    				return _.map(strings, function(s) {
-    					return + s
-    				})
-    			};
-    			var chosenChild = counterToChild[_.max(toNumber(Object.keys(counterToChild)))]
-    			if (didWill == 'Will')
-    				chosenChild.trigger('before op', [op], isFromClient);
-    			if (didWill == 'Did')
-    				chosenChild.trigger('op', [op], isFromClient);
-    			}
-    		,
+        triggerChildren: function(didWill, op, isFromClient) {
+          var newP = _.clone(op.p);
+          // var children = Ember.get(context, '_children');
+          var children = context.get('_children');
+          var childrenKeys = Object.keys(children);
+          if (Ember.isEmpty(childrenKeys))
+            return;
+          var child,
+            utils = this;
+          var counterToChild = _.mapKeys(children, function(v, childKey) {
+            if (utils.isOpOnArray(op) && !isNaN(+ _.last(childKey.split('.'))))
+              return 0
+            else
+              return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), utils.cutLast(op.p,op))
+          });
+          var toNumber = function(strings) {
+            return _.map(strings, function(s) {
+              return + s
+            })
+          };
+          var chosenChild = counterToChild[_.max(toNumber(Object.keys(counterToChild)))]
+          if (didWill == 'Will')
+            chosenChild.trigger('before op', [op], isFromClient);
+          if (didWill == 'Did')
+            chosenChild.trigger('op', [op], isFromClient);
+          }
+        ,
 
-    		beforeAfter: function(didWill) {
-    			var utils = this;
-    			var ex;
-    			return function(ops, isFromClient) {
-    				// console.log( _.first (ops));
+        beforeAfter: function(didWill) {
+          var utils = this;
+          var ex;
+          return function(ops, isFromClient) {
 
-    				if (!isFromClient) {
-    					_.forEach(ops, function(op) {
-    						// if (didWill == 'Did')
-    						// console.log(Ember.get(context,'_prefix') + ' recieved log');
-    						if (utils.comparePathToChildren(op.p, op)) {
-    							utils.triggerChildren(didWill, op, isFromClient);
-    						} else {
-    							if (utils.isOpOnArray(op)) {
-    								ex = utils.extractArrayPath(op);
+            if (!isFromClient) {
+              _.forEach(ops, function(op) {
+                if (utils.comparePathToChildren(op.p, op)) {
+                  utils.triggerChildren(didWill, op, isFromClient);
+                } else {
+                  if (utils.isOpOnArray(op)) {
+                    ex = utils.extractArrayPath(op);
 
-    								// console.log(Ember.get(context,'_prefix') + ' perform log');
-    								// console.log('op came to parent');
-    								context.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
-    							} else {
-    								context["property" + didWill + "Change"](utils.prefixToChildLimiations(op.p.join('.')));
-    							}
-    						}
-    					});
-    				}
-    			};
-    		},
+                    context.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
+                  } else {
+                    context["property" + didWill + "Change"](utils.prefixToChildLimiations(op.p.join('.')));
+                  }
+                }
+              });
+            }
+          };
+        },
 
-    		beforeAfterChild: function(didWill) {
-    			var utils = this;
-    			var ex,
-    				prefix,
-    				_idx;
-    			return function(ops, isFromClient) {
-    				if (((_idx = Ember.get(context, '_idx')) != null) || !isFromClient) {
-    					_.forEach(ops, function(op) {
+        beforeAfterChild: function(didWill) {
+          var utils = this;
+          var ex,
+            prefix,
+            _idx;
+          return function(ops, isFromClient) {
+            if (((_idx = Ember.get(context, '_idx')) != null) || !isFromClient) {
+              _.forEach(ops, function(op) {
 
-    						if (op.p.join('.') == (prefix = Ember.get(context, '_prefix')) && didWill == 'Did') {
-    							if  (op.oi != null) {
-    								var content = context.get('_root.doc.data.' + prefix);
-    								context.replaceContent(content, true);
-    							} else {
-    								if (op.od != null) {
-    									var fatherPrefix = prefix.split('.');
-    									var key = fatherPrefix.pop();
-    									var father;
-    									if (!_.isEmpty(fatherPrefix) && (father = context.get('_children.' + fatherPrefix.join('.'))))
-    										father.removeKey(key);
-    									else
-    										context.get('_root').propertyDidChange(prefix)
-    								}
-    							}
-    						} else {
-    							var path = (_idx == null)
-    								? prefix.split('.')
-    								: prefix.split('.').concat(String(_idx));
-    							var newP = _.difference(op.p, path);
-    							if (utils.comparePathToPrefix(op.p.join('.'), prefix)) {
-    								if (utils.isOpOnArray(op) && (Ember.get(context, '_idx') == null)) {
+                if (op.p.join('.') == (prefix = Ember.get(context, '_prefix')) && didWill == 'Did') {
+                  if  (op.oi != null) {
+                    var content = context.get('_root.doc.data.' + prefix);
+                    context.replaceContent(content, true);
+                  } else {
+                    if (op.od != null) {
+                      var fatherPrefix = prefix.split('.');
+                      var key = fatherPrefix.pop();
+                      var father;
+                      if (!_.isEmpty(fatherPrefix) && (father = context.get('_children.' + fatherPrefix.join('.'))))
+                        father.removeKey(key);
+                      else
+                        context.get('_root').propertyDidChange(prefix)
+                    }
+                  }
+                } else {
+                  var path = (_idx == null)
+                    ? prefix.split('.')
+                    : prefix.split('.').concat(String(_idx));
+                  var newP = _.difference(op.p, path);
+                  if (utils.comparePathToPrefix(op.p.join('.'), prefix)) {
+                    if (utils.isOpOnArray(op) && (Ember.get(context, '_idx') == null)) {
 
-    									var newOp = _.clone(op);
-    									newOp.p = newP;
-    									ex = utils.extractArrayPath(newOp);
+                      var newOp = _.clone(op);
+                      newOp.p = newP;
+                      ex = utils.extractArrayPath(newOp);
 
-    									if (ex.p == "")
-    										context["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
-    									else
-    										Ember.get(context, ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt);
-    									}
-    								else {
-    									if (newP.join('.') == '') {
+                      if (ex.p == "")
+                        context["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
+                      else
+                        Ember.get(context, ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt);
+                      }
+                    else {
+                      if (newP.join('.') == '') {
 
-    										// delete self from father
-    										if (_.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
-    											var keyToRemove = path.pop();
-    											if (_.isEmpty(path)) {
-    												utils.removeChildren(keyToRemove, true);
-    											}
-    											else {
-    												var father = context.get('_children')[path.join('.')];
-    												father.removeKey (keyToRemove);
-    											}
-    										}
-    										else {
-    											// context["property" + didWill + "Change"]('content');
-    										}
-    									}
+                        // delete self from father
+                        if (_.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
+                          var keyToRemove = path.pop();
+                          if (_.isEmpty(path)) {
+                            utils.removeChildren(keyToRemove, true);
+                          }
+                          else {
+                            var father = context.get('_children')[path.join('.')];
+                            father.removeKey (keyToRemove);
+                          }
+                        }
+                        else {
+                          // context["property" + didWill + "Change"]('content');
+                        }
+                      }
 
-    									else {
+                      else {
 
-    										if (op.oi && op.od == null)
-    											context.addKey(_.first(newP))
+                        if (op.oi && op.od == null)
+                          context.addKey(_.first(newP))
 
-    										if (op.od && op.oi == null)
-    											context.removeKey(_.first(newP))
+                        if (op.od && op.oi == null)
+                          context.removeKey(_.first(newP))
 
-    										context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
-    									}
-    								}
-    							}
-    						}
-    					});
-    				}
-    			}
-    		},
+                        context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
+                      }
+                    }
+                  }
+                }
+              });
+            }
+          }
+        },
 
-    		findMaxIndex: function (arr) {
-    			return arr.indexOf(_.max(arr))
-    		},
+        findMaxIndex: function (arr) {
+          return arr.indexOf(_.max(arr))
+        },
 
-    		extractArrayPath: function(op) {
-    			return {
-    				idx: + _.last(op.p),
-    				p: _.slice(op.p, 0, op.p.length - 1).join('.'),
-    				addAmt: typeof op.li != 'undefined'
-    					? 1
-    					: 0,
-    				removeAmt: typeof op.ld != 'undefined'
-    					? 1
-    					: 0
-    			}
-    		}
+        extractArrayPath: function(op) {
+          return {
+            idx: + _.last(op.p),
+            p: _.slice(op.p, 0, op.p.length - 1).join('.'),
+            addAmt: typeof op.li != 'undefined'
+              ? 1
+              : 0,
+            removeAmt: typeof op.ld != 'undefined'
+              ? 1
+              : 0
+          }
+        }
 
-    	}
+      }
     }
   });
 define("ember-share/store", 
@@ -1369,7 +1360,6 @@ define("ember-share/store",
               .catch(function (err) {
                 store.isAuthenticating = false;
                 // store.socket.end()
-                // debugger
               })
           }
         };
@@ -1691,11 +1681,11 @@ define("ember-share/utils",
   function(__exports__) {
     "use strict";
     function guid() {
-    	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    		var r = Math.random() * 16 | 0,
-    		v = c === 'x' ? r : r & 3 | 8;
-    		return v.toString(16);
-    	});
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0,
+        v = c === 'x' ? r : r & 3 | 8;
+        return v.toString(16);
+      });
     }
 
     /*
@@ -1718,177 +1708,177 @@ define("ember-share/utils",
     * All rights reserved.
     */
     function clonePath(path) {
-    	return { newPos: path.newPos, components: path.components.slice(0) };
+      return { newPos: path.newPos, components: path.components.slice(0) };
     }
     var fbDiff = function(ignoreWhitespace) {
-    	this.ignoreWhitespace = ignoreWhitespace;
+      this.ignoreWhitespace = ignoreWhitespace;
     };
     fbDiff.prototype = {
-    	diff: function(oldString, newString) {
-    		// Handle the identity case (this is due to unrolling editLength == 0
-    			if (newString === oldString) {
-    				return [{ value: newString }];
-    			}
-    			if (!newString) {
-    				return [{ value: oldString, removed: true }];
-    			}
-    			if (!oldString) {
-    				return [{ value: newString, added: true }];
-    			}
+      diff: function(oldString, newString) {
+        // Handle the identity case (this is due to unrolling editLength == 0
+          if (newString === oldString) {
+            return [{ value: newString }];
+          }
+          if (!newString) {
+            return [{ value: oldString, removed: true }];
+          }
+          if (!oldString) {
+            return [{ value: newString, added: true }];
+          }
 
-    			newString = this.tokenize(newString);
-    			oldString = this.tokenize(oldString);
+          newString = this.tokenize(newString);
+          oldString = this.tokenize(oldString);
 
-    			var newLen = newString.length, oldLen = oldString.length;
-    			var maxEditLength = newLen + oldLen;
-    			var bestPath = [{ newPos: -1, components: [] }];
+          var newLen = newString.length, oldLen = oldString.length;
+          var maxEditLength = newLen + oldLen;
+          var bestPath = [{ newPos: -1, components: [] }];
 
-    		// Seed editLength = 0
-    		var oldPos = this.extractCommon(bestPath[0], newString, oldString, 0);
-    		if (bestPath[0].newPos+1 >= newLen && oldPos+1 >= oldLen) {
-    			return bestPath[0].components;
-    		}
+        // Seed editLength = 0
+        var oldPos = this.extractCommon(bestPath[0], newString, oldString, 0);
+        if (bestPath[0].newPos+1 >= newLen && oldPos+1 >= oldLen) {
+          return bestPath[0].components;
+        }
 
-    		for (var editLength = 1; editLength <= maxEditLength; editLength++) {
-    			for (var diagonalPath = -1*editLength; diagonalPath <= editLength; diagonalPath+=2) {
-    				var basePath;
-    				var addPath = bestPath[diagonalPath-1],
-    				removePath = bestPath[diagonalPath+1];
-    				oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
-    				if (addPath) {
-    					// No one else is going to attempt to use this value, clear it
-    					bestPath[diagonalPath-1] = undefined;
-    				}
+        for (var editLength = 1; editLength <= maxEditLength; editLength++) {
+          for (var diagonalPath = -1*editLength; diagonalPath <= editLength; diagonalPath+=2) {
+            var basePath;
+            var addPath = bestPath[diagonalPath-1],
+            removePath = bestPath[diagonalPath+1];
+            oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
+            if (addPath) {
+              // No one else is going to attempt to use this value, clear it
+              bestPath[diagonalPath-1] = undefined;
+            }
 
-    				var canAdd = addPath && addPath.newPos+1 < newLen;
-    				var canRemove = removePath && 0 <= oldPos && oldPos < oldLen;
-    				if (!canAdd && !canRemove) {
-    					bestPath[diagonalPath] = undefined;
-    					continue;
-    				}
+            var canAdd = addPath && addPath.newPos+1 < newLen;
+            var canRemove = removePath && 0 <= oldPos && oldPos < oldLen;
+            if (!canAdd && !canRemove) {
+              bestPath[diagonalPath] = undefined;
+              continue;
+            }
 
-    				// Select the diagonal that we want to branch from. We select the prior
-    				// path whose position in the new string is the farthest from the origin
-    				// and does not pass the bounds of the diff graph
-    				if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
-    					basePath = clonePath(removePath);
-    					this.pushComponent(basePath.components, oldString[oldPos], undefined, true);
-    				} else {
-    					basePath = clonePath(addPath);
-    					basePath.newPos++;
-    					this.pushComponent(basePath.components, newString[basePath.newPos], true, undefined);
-    				}
+            // Select the diagonal that we want to branch from. We select the prior
+            // path whose position in the new string is the farthest from the origin
+            // and does not pass the bounds of the diff graph
+            if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
+              basePath = clonePath(removePath);
+              this.pushComponent(basePath.components, oldString[oldPos], undefined, true);
+            } else {
+              basePath = clonePath(addPath);
+              basePath.newPos++;
+              this.pushComponent(basePath.components, newString[basePath.newPos], true, undefined);
+            }
 
-    				oldPos = this.extractCommon(basePath, newString, oldString, diagonalPath);
+            oldPos = this.extractCommon(basePath, newString, oldString, diagonalPath);
 
-    				if (basePath.newPos+1 >= newLen && oldPos+1 >= oldLen) {
-    					return basePath.components;
-    				} else {
-    					bestPath[diagonalPath] = basePath;
-    				}
-    			}
-    		}
-    	},
+            if (basePath.newPos+1 >= newLen && oldPos+1 >= oldLen) {
+              return basePath.components;
+            } else {
+              bestPath[diagonalPath] = basePath;
+            }
+          }
+        }
+      },
 
-    	pushComponent: function(components, value, added, removed) {
-    		var last = components[components.length-1];
-    		if (last && last.added === added && last.removed === removed) {
-    			// We need to clone here as the component clone operation is just
-    			// as shallow array clone
-    			components[components.length-1] =
-    			{value: this.join(last.value, value), added: added, removed: removed };
-    		} else {
-    			components.push({value: value, added: added, removed: removed });
-    		}
-    	},
-    	extractCommon: function(basePath, newString, oldString, diagonalPath) {
-    		var newLen = newString.length,
-    		oldLen = oldString.length,
-    		newPos = basePath.newPos,
-    		oldPos = newPos - diagonalPath;
-    		while (newPos+1 < newLen && oldPos+1 < oldLen && this.equals(newString[newPos+1], oldString[oldPos+1])) {
-    			newPos++;
-    			oldPos++;
+      pushComponent: function(components, value, added, removed) {
+        var last = components[components.length-1];
+        if (last && last.added === added && last.removed === removed) {
+          // We need to clone here as the component clone operation is just
+          // as shallow array clone
+          components[components.length-1] =
+          {value: this.join(last.value, value), added: added, removed: removed };
+        } else {
+          components.push({value: value, added: added, removed: removed });
+        }
+      },
+      extractCommon: function(basePath, newString, oldString, diagonalPath) {
+        var newLen = newString.length,
+        oldLen = oldString.length,
+        newPos = basePath.newPos,
+        oldPos = newPos - diagonalPath;
+        while (newPos+1 < newLen && oldPos+1 < oldLen && this.equals(newString[newPos+1], oldString[oldPos+1])) {
+          newPos++;
+          oldPos++;
 
-    			this.pushComponent(basePath.components, newString[newPos], undefined, undefined);
-    		}
-    		basePath.newPos = newPos;
-    		return oldPos;
-    	},
+          this.pushComponent(basePath.components, newString[newPos], undefined, undefined);
+        }
+        basePath.newPos = newPos;
+        return oldPos;
+      },
 
-    	equals: function(left, right) {
-    		var reWhitespace = /\S/;
-    		if (this.ignoreWhitespace && !reWhitespace.test(left) && !reWhitespace.test(right)) {
-    			return true;
-    		} else {
-    			return left === right;
-    		}
-    	},
-    	join: function(left, right) {
-    		return left + right;
-    	},
-    	tokenize: function(value) {
-    		return value;
-    	}
+      equals: function(left, right) {
+        var reWhitespace = /\S/;
+        if (this.ignoreWhitespace && !reWhitespace.test(left) && !reWhitespace.test(right)) {
+          return true;
+        } else {
+          return left === right;
+        }
+      },
+      join: function(left, right) {
+        return left + right;
+      },
+      tokenize: function(value) {
+        return value;
+      }
     };
     // copied from https://github.com/Dignifiedquire/share-primus/blob/master/lib/client/share-primus.js
     function patchShare() {
-    	// Map Primus ready states to ShareJS ready states.
-    	var STATES = {};
-    	STATES[window.Primus.CLOSED] = 'disconnected';
-    	STATES[window.Primus.OPENING] = 'connecting';
-    	STATES[window.Primus.OPEN] = 'connected';
+      // Map Primus ready states to ShareJS ready states.
+      var STATES = {};
+      STATES[window.Primus.CLOSED] = 'disconnected';
+      STATES[window.Primus.OPENING] = 'connecting';
+      STATES[window.Primus.OPEN] = 'connected';
 
-    	// Override Connection's bindToSocket method with an implementation
-    	// that understands Primus Stream.
-    	window.sharedb.Connection.prototype.bindToSocket = function(stream) {
-    		var connection = this;
-    		this.state = (stream.readyState === 0 || stream.readyState === 1) ? 'connecting' : 'disconnected';
+      // Override Connection's bindToSocket method with an implementation
+      // that understands Primus Stream.
+      window.sharedb.Connection.prototype.bindToSocket = function(stream) {
+        var connection = this;
+        this.state = (stream.readyState === 0 || stream.readyState === 1) ? 'connecting' : 'disconnected';
 
-    		setState(Primus.OPENING);
-    		setState(stream.readyState);
-    		this.canSend = this.state === 'connected'; // Primus can't send in connecting state.
+        setState(Primus.OPENING);
+        setState(stream.readyState);
+        this.canSend = this.state === 'connected'; // Primus can't send in connecting state.
 
-    		// Tiny facade so Connection can still send() messages.
-    		this.socket = {
-    			send: function(msg) {
-    				stream.write(msg);
-    			}
-    		};
+        // Tiny facade so Connection can still send() messages.
+        this.socket = {
+          send: function(msg) {
+            stream.write(msg);
+          }
+        };
 
-    		stream.on('data', function(msg) {
-    			if(msg.a)
-    			{
-    				try {
-    					connection.handleMessage(msg);
-    				} catch (e) {
-    					connection.emit('error', e);
-    					throw e;
-    				}
-    			}
-    		});
+        stream.on('data', function(msg) {
+          if(msg.a)
+          {
+            try {
+              connection.handleMessage(msg);
+            } catch (e) {
+              connection.emit('error', e);
+              throw e;
+            }
+          }
+        });
 
-    		stream.on('readyStateChange', function() {
-    			// console.log(stream.readyState);
-    			setState(stream.readyState);
-    		});
+        stream.on('readyStateChange', function() {
+          // console.log(stream.readyState);
+          setState(stream.readyState);
+        });
 
-    		stream.on('reconnecting', function() {
-    			if(connection.state === "disconnected")
-    			{
-    				setState(Primus.OPENING);
-    				connection.canSend = false;
-    			}
-    		});
+        stream.on('reconnecting', function() {
+          if(connection.state === "disconnected")
+          {
+            setState(Primus.OPENING);
+            connection.canSend = false;
+          }
+        });
 
-    		function setState(readyState) {
-    			var shareState = STATES[readyState];
-    			connection._setState(shareState);
-    		}
+        function setState(readyState) {
+          var shareState = STATES[readyState];
+          connection._setState(shareState);
+        }
         };
     }
     var isArray = Array.isArray || function (obj) {
-    	return obj instanceof Array;
+      return obj instanceof Array;
     };
     var diff = new fbDiff(false);
     __exports__.guid = guid;
