@@ -345,7 +345,7 @@ define("ember-share/models/base",
       deleteProperty: function deleteProperty(k) {
         var doc = this.get('doc');
         var p = k.split('.');
-        var od = getPlainObject("_root." + this.get(k));
+        var od = getPlainObject(this.get("_root." + k));
         doc.submitOp([
           {
             p: p,
