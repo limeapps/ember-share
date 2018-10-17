@@ -431,10 +431,10 @@ define("ember-share/models/model",
           oldDoc.destroy();
         }
 
-         doc.on('before op', utils.beforeAfter("Will"));
-        //doc.on('before component', utils.beforeAfter("Will"));
-        //doc.on('after component', utils.beforeAfter("Did"));
-         doc.on('op', utils.beforeAfter("Did"));
+         //doc.on('before op', utils.beforeAfter("Will"));
+        doc.on('before component', utils.beforeAfter("Will"));
+        doc.on('after component', utils.beforeAfter("Did"));
+         //doc.on('op', utils.beforeAfter("Did"));
 
         this.set('oldDoc', doc);
 
