@@ -956,7 +956,7 @@ define("ember-share/models/utils",
             var result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)) );
             if (orignalPrefix = Ember.get(context, '_prefix')) {
               orignalPrefix = orignalPrefix.split('.');
-              return result.slice(orignalPrefix.length)
+              return result.slice(orignalPrefix.length).join('.');
             } else
               return result.join('.');
           }
