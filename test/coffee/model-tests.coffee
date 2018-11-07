@@ -17,6 +17,40 @@ module.exports = ->
     afterEach ->
       schedule = null
 
+    it 'ember object', ->
+      MyObj = Ember.Object.extend
+        someJson:
+          events:
+            idle_trip:
+              id:
+                a: 1
+                b: 2
+                c: 3
+
+        deleteMyProp: ->
+          @notifyPropertyChange 'myProp'
+          delete @['myProp']
+
+      counter = 0
+      myObj = MyObj.create()
+
+      fn = ->
+        Ember.computed
+          get: ->
+            counter++
+            @get 'someJson.events.idle_trip'
+          set: (k, v) ->
+            v
+
+      Ember.defineProperty(myObj, 'myProp', fn())
+      console.log(myObj.get 'myProp')
+      myObj.deleteMyProp()
+      myObj.set 'someJson', '3'
+      console.log(myObj.get 'myProp')
+      Ember.defineProperty(myObj, 'myProp', fn())
+      console.log(myObj.get 'myProp')
+      assert.equal counter, 2
+
     it 'reorder rosters #1', ->
       oldIndex = 1
       newIndex = 2

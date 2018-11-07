@@ -79,7 +79,6 @@ define("ember-share/attr",
           set: function(k, v, isFromServer) {
             var path = (k == null) ? this.get('_prefix') : ((k == '_idx' || !this._fullPath)  ? k : this._fullPath(k));
             return this._set(path, v)
-
           }
         });
       }
@@ -1134,13 +1133,17 @@ define("ember-share/models/utils",
 
                       else {
 
-                        if (op.oi && op.od == null)
+                        if (op.oi && op.od == null) {
                           context.addKey(_.first(newP))
+                        }
 
-                        if (op.od && op.oi == null)
+                        if (op.od && op.oi == null) {
+                          context["notifyPropertyChange"](utils.prefixToChildLimiations(newP.join('.')));
                           context.removeKey(_.first(newP))
+                        } else {
+                          context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
+                        }
 
-                        context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
                       }
                     }
                   }

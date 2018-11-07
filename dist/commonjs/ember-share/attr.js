@@ -51,7 +51,6 @@ exports["default"] = function(sdbProps) {
       set: function(k, v, isFromServer) {
         var path = (k == null) ? this.get('_prefix') : ((k == '_idx' || !this._fullPath)  ? k : this._fullPath(k));
         return this._set(path, v)
-
       }
     });
   }

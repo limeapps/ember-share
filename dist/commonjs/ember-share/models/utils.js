@@ -235,13 +235,17 @@ exports["default"] = function(context) {
 
                   else {
 
-                    if (op.oi && op.od == null)
+                    if (op.oi && op.od == null) {
                       context.addKey(_.first(newP))
+                    }
 
-                    if (op.od && op.oi == null)
+                    if (op.od && op.oi == null) {
+                      context["notifyPropertyChange"](utils.prefixToChildLimiations(newP.join('.')));
                       context.removeKey(_.first(newP))
+                    } else {
+                      context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
+                    }
 
-                    context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
                   }
                 }
               }
