@@ -1,27 +1,27 @@
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   require('load-grunt-tasks')(grunt);
-  var config = require('load-grunt-config')(grunt, {
+  const config = require('load-grunt-config')(grunt, {
     configPath: 'tasks/options',
-    init: false
+    init: false,
   });
 
   grunt.loadTasks('tasks');
 
   this.registerTask('default', ['build']);
 
-// Run client-side tests on the command line.
-/*  this.registerTask('test', 'Runs tests through the command line using PhantomJS', [
+  // Run client-side tests on the command line.
+  /*  this.registerTask('test', 'Runs tests through the command line using PhantomJS', [
     'build',
     'tests',
     'connect'
-  ]);*/
+  ]); */
 
   // Run a server. This is ideal for running the QUnit tests in the browser.
   this.registerTask('server', [
     'build',
     'tests',
     'share',
-    'watch:server'
+    'watch:server',
   ]);
 
 
@@ -32,7 +32,7 @@ module.exports = function(grunt) {
     'transpile:testsAmd',
     'transpile:testsCommonjs',
     'concat:amdNodeTests', // yet another hack to get es6 transpiled tests
-    'concat:amdTests' // yet another hack to get es6 transpiled tests
+    'concat:amdTests', // yet another hack to get es6 transpiled tests
   ]);
 
   // Build a new version of the library
@@ -45,27 +45,27 @@ module.exports = function(grunt) {
     'concat:amdNoVersion',
     'browser:dist',
     'browser:distNoVersion',
-    'uglify:browser'
+    // 'uglify:browser'
   ]);
 
   // Custom phantomjs test task
-/*  this.registerTask('test:phantom', "Runs tests through the command line using PhantomJS", [
+  /*  this.registerTask('test:phantom', "Runs tests through the command line using PhantomJS", [
     'build',
     'tests'
-  ]);*/
+  ]); */
 
   // Custom Node test task
-/*  this.registerTask('test:node', [
+  /*  this.registerTask('test:node', [
     'build',
     'tests',
     'mochaTest'
-  ]);*/
+  ]); */
 
   this.registerTask('test', [
     'build',
     'tests',
     'share',
-    'mocha_phantomjs'
+    'mocha_phantomjs',
   ]);
 
   this.registerTask('build-release', [
@@ -75,21 +75,21 @@ module.exports = function(grunt) {
     'concat:browser',
     'browser:distNoVersion',
     'concat:amdNoVersion',
-    'uglify:browserNoVersion'
+    'uglify:browserNoVersion',
   ]);
 
-  this.registerTask('coffeeTests',[
+  this.registerTask('coffeeTests', [
     'clean:tests',
     'build',
     'coffeeify:tests',
-    'watch:coffeeTests'
+    'watch:coffeeTests',
 
   ]);
-  this.registerTask('phantomTests',[
+  this.registerTask('phantomTests', [
     'clean:tests',
     'build',
     'coffeeify:tests',
-    'mocha_phantomjs:phantom'
+    'mocha_phantomjs:phantom',
 
   ]);
   // Custom YUIDoc task

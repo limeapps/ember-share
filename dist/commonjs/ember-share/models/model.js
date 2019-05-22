@@ -13,59 +13,58 @@ var SDBBase = require("./base")["default"];
 //
 //
 
-var SDBRoot = SDBBase.extend({
-  unload: function() {
+const SDBRoot = SDBBase.extend({
+  unload() {
     return this.get('_store').unload(this.get('_type'), this);
   },
 
   id: Ember.computed.reads('doc.id'),
 
-  _childLimiations: (function() {
-    return []
+  _childLimiations: (function () {
+    return [];
   }).property(),
 
-  _root: (function() {
-    return this
+  _root: (function () {
+    return this;
   }).property(),
 
-  _children: (function() {
-    return {}
+  _children: (function () {
+    return {};
   }).property(),
 
   _sdbProps: (function () {
-    return []
+    return [];
   }).property(),
 
-  setOpsInit: (function() {
-    var doc = this.get('doc', true);
-    var oldDoc = this.get('oldDoc');
-    var utils = Utils(this);
-    var self = this;
+  setOpsInit: (function () {
+    const doc = this.get('doc', true);
+    const oldDoc = this.get('oldDoc');
+    const utils = Utils(this);
+    const self = this;
 
 
     if (oldDoc) {
       oldDoc.destroy();
     }
 
-     //doc.on('before op', utils.beforeAfter("Will"));
-    doc.on('before component', utils.beforeAfter("Will"));
-    doc.on('after component', utils.beforeAfter("Did"));
-     //doc.on('op', utils.beforeAfter("Did"));
+    // doc.on('before op', utils.beforeAfter('Will'));
+    doc.on('before component', utils.beforeAfter('Will'));
+    doc.on('after component', utils.beforeAfter('Did'));
+    // doc.on('op', utils.beforeAfter('Did'));
 
     this.set('oldDoc', doc);
-
   }).observes('doc').on('init'),
 
 
-  willDestroy: function () {
-    var utils = Utils(this);
+  willDestroy() {
+    const utils = Utils(this);
     this.get('doc').destroy();
-    this._super.apply(this, arguments)
+    this._super.apply(this, arguments);
     utils.removeChildren();
     console.log('destroying children');
-  }
+  },
 
 });
 
 
-exports["default"] = SDBRoot
+exports["default"] = SDBRoot;

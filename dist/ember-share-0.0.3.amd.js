@@ -267,7 +267,7 @@ define("ember-share/models/base",
     var GetterSettersMixin = Ember.Mixin.create({
 
       _get: function(k, selfCall) {
-        var firstValue = _.first(k.split('.'));
+        var firstValue = _.head(k.split('.'));
 
         if (k != '_sdbProps' && _.includes(this.get('_sdbProps'), firstValue)) {
           var content = this.get("doc.data." + k);
@@ -396,62 +396,61 @@ define("ember-share/models/model",
     //
     //
 
-    var SDBRoot = SDBBase.extend({
-      unload: function() {
+    const SDBRoot = SDBBase.extend({
+      unload() {
         return this.get('_store').unload(this.get('_type'), this);
       },
 
       id: Ember.computed.reads('doc.id'),
 
-      _childLimiations: (function() {
-        return []
+      _childLimiations: (function () {
+        return [];
       }).property(),
 
-      _root: (function() {
-        return this
+      _root: (function () {
+        return this;
       }).property(),
 
-      _children: (function() {
-        return {}
+      _children: (function () {
+        return {};
       }).property(),
 
       _sdbProps: (function () {
-        return []
+        return [];
       }).property(),
 
-      setOpsInit: (function() {
-        var doc = this.get('doc', true);
-        var oldDoc = this.get('oldDoc');
-        var utils = Utils(this);
-        var self = this;
+      setOpsInit: (function () {
+        const doc = this.get('doc', true);
+        const oldDoc = this.get('oldDoc');
+        const utils = Utils(this);
+        const self = this;
 
 
         if (oldDoc) {
           oldDoc.destroy();
         }
 
-         //doc.on('before op', utils.beforeAfter("Will"));
-        doc.on('before component', utils.beforeAfter("Will"));
-        doc.on('after component', utils.beforeAfter("Did"));
-         //doc.on('op', utils.beforeAfter("Did"));
+        // doc.on('before op', utils.beforeAfter('Will'));
+        doc.on('before component', utils.beforeAfter('Will'));
+        doc.on('after component', utils.beforeAfter('Did'));
+        // doc.on('op', utils.beforeAfter('Did'));
 
         this.set('oldDoc', doc);
-
       }).observes('doc').on('init'),
 
 
-      willDestroy: function () {
-        var utils = Utils(this);
+      willDestroy() {
+        const utils = Utils(this);
         this.get('doc').destroy();
-        this._super.apply(this, arguments)
+        this._super.apply(this, arguments);
         utils.removeChildren();
         console.log('destroying children');
-      }
+      },
 
     });
 
 
-    __exports__["default"] = SDBRoot
+    __exports__["default"] = SDBRoot;
   });
 define("ember-share/models/sub-array", 
   ["./sub-mixin","./base","./utils","exports"],
@@ -896,280 +895,245 @@ define("ember-share/models/utils",
   ["exports"],
   function(__exports__) {
     "use strict";
-    __exports__["default"] = function(context) {
-
+    __exports__["default"] = function (context) {
       return {
 
-        isOpOnArray: function(op) {
-          return (op.ld != null) || (op.lm != null) || (op.li != null)
+        isOpOnArray(op) {
+          return (op.ld != null) || (op.lm != null) || (op.li != null);
         },
 
-        matchingPaths: function(as, bs) {
-          var counter = 0;
-          var higherLength = (as.length > bs.length)
+        matchingPaths(as, bs) {
+          let counter = 0;
+          const higherLength = (as.length > bs.length)
             ? as.length
-            : bs.length
+            : bs.length;
           while ((as[counter] == '*' || as[counter] == bs[counter]) && counter < higherLength) {
-            counter++
+            counter++;
           }
-          return counter - (as.length / 1000)
+          return counter - (as.length / 1000);
         },
 
-        matchChildToLimitations: function (key) {
-          var childLimiations = Ember.get(context, '_root._childLimiations');
-          var prefix = Ember.get(context, '_prefix')
+        matchChildToLimitations(key) {
+          const childLimiations = Ember.get(context, '_root._childLimiations');
+          let prefix = Ember.get(context, '_prefix');
 
-          if (prefix == null || key.match(prefix))
-            prefix = key
-          else
-            prefix += '.' + key
+          if (prefix == null || key.match(prefix)) prefix = key;
+          else prefix += `.${key}`;
 
           prefix = prefix.split('.');
-          var self = this;
-          return _.some (childLimiations, function (_limit) {
-            var limit = _limit.split('/');
-            return prefix.length == limit.length && Math.ceil(self.matchingPaths(limit, prefix)) == prefix.length
-          })
+          const self = this;
+          return _.some(childLimiations, (_limit) => {
+            const limit = _limit.split('/');
+            return prefix.length == limit.length && Math.ceil(self.matchingPaths(limit, prefix)) == prefix.length;
+          });
         },
 
-        prefixToChildLimiations: function (key) {
-          var childLimiations = Ember.get(context, '_root._childLimiations');
-          var prefix = Ember.get(context, '_prefix')
+        prefixToChildLimiations(key) {
+          const childLimiations = Ember.get(context, '_root._childLimiations');
+          let prefix = Ember.get(context, '_prefix');
 
-          if (prefix == null || key.match(prefix))
-            prefix = key
-          else
-            prefix += '.' + key
+          if (prefix == null || key.match(prefix)) prefix = key;
+          else prefix += `.${key}`;
 
           prefix = prefix.split('.');
-          var self = this, limiationsArray;
+          const self = this; let
+            limiationsArray;
 
-          var relevantLimitIndex = this.findMaxIndex(limiationsArray = _.map (childLimiations, function (_limit) {
-            var limit = _limit.split('/');
-            var result = Math.ceil(self.matchingPaths(limit, prefix))
-            return result < limit.length ? 0 : result
+          const relevantLimitIndex = this.findMaxIndex(limiationsArray = _.map(childLimiations, (_limit) => {
+            const limit = _limit.split('/');
+            const result = Math.ceil(self.matchingPaths(limit, prefix));
+            return result < limit.length ? 0 : result;
           }));
           if (relevantLimitIndex >= 0 && limiationsArray[relevantLimitIndex] > 0) {
-            var relevantLimit = childLimiations[relevantLimitIndex].split('/');
-            var orignalPrefix;
-            var result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)) );
+            const relevantLimit = childLimiations[relevantLimitIndex].split('/');
+            let orignalPrefix;
+            const result = prefix.slice(0, Math.ceil(self.matchingPaths(relevantLimit, prefix)));
             if (orignalPrefix = Ember.get(context, '_prefix')) {
               orignalPrefix = orignalPrefix.split('.');
               return result.slice(orignalPrefix.length).join('.');
-            } else
-              return result.join('.');
+            } return result.join('.');
           }
-          else {
-            return key;
-          }
-
+          return key;
         },
 
-        removeChildren: function (path, includeSelf) {
-          var children = Ember.get(context, '_children');
-          var childrenKeys = Object.keys(children);
-          var prefix = context.get('_prefix');
-          var utils = this;
+        removeChildren(path, includeSelf) {
+          const children = Ember.get(context, '_children');
+          let childrenKeys = Object.keys(children);
+          const prefix = context.get('_prefix');
+          const utils = this;
 
           if ((prefix != null) && path && path.indexOf(prefix) != 0) {
-            path = prefix + '.' + path
+            path = `${prefix}.${path}`;
           }
 
           if (path) {
-            childrenKeys = _.reduce(childrenKeys, function(result, key) {
+            childrenKeys = _.reduce(childrenKeys, (result, key) => {
               if (key == path) {
                 if (includeSelf) result.push(key);
-              } else {
-                if (key.indexOf(path) == 0) result.push(key);
-              }
-              return result
+              } else if (key.indexOf(path) == 0) result.push(key);
+              return result;
             }, []);
           }
 
-          _.forEach (childrenKeys, function (key) {
-            children[key].removeListeners()
-            children[key].destroy()
-            delete children[key]
-          })
+          _.forEach(childrenKeys, (key) => {
+            children[key].removeListeners();
+            children[key].destroy();
+            delete children[key];
+          });
         },
 
-        comparePathToPrefix: function(path, prefix) {
-          return Boolean(Math.ceil(this.matchingPaths(path.split('.'), prefix.split('.'))))
+        comparePathToPrefix(path, prefix) {
+          return Boolean(Math.ceil(this.matchingPaths(path.split('.'), prefix.split('.'))));
         },
 
-        cutLast: function(path, op) {
-          var tempPath;
-          if (this.isOpOnArray(op) && !isNaN(+ _.last(path))) {
+        cutLast(path, op) {
+          let tempPath;
+          if (this.isOpOnArray(op) && !isNaN(+_.last(path))) {
             tempPath = _.clone(path);
             tempPath.pop();
           }
-          return (tempPath)
-            ? tempPath
-            : path
+          return (tempPath) || path;
         },
 
-        comparePathToChildren: function(path, op) {
-          var utils = this;
-          var children = Ember.get(context, '_children');
-          var childrenKeys = Object.keys(children);
-          var hasChildren = _.some(childrenKeys, function(childKey) {
-            var pathsCounter = utils.matchingPaths(childKey.split('.'), utils.cutLast(path, op))
-            return Math.ceil(pathsCounter) == childKey.split('.').length
+        comparePathToChildren(path, op) {
+          const utils = this;
+          const children = Ember.get(context, '_children');
+          const childrenKeys = Object.keys(children);
+          const hasChildren = _.some(childrenKeys, (childKey) => {
+            const pathsCounter = utils.matchingPaths(childKey.split('.'), utils.cutLast(path, op));
+            return Math.ceil(pathsCounter) == childKey.split('.').length;
           });
-          return !Ember.isEmpty(childrenKeys) && hasChildren
+          return !Ember.isEmpty(childrenKeys) && hasChildren;
         },
 
-        triggerChildren: function(didWill, op, isFromClient) {
-          var newP = _.clone(op.p);
+        triggerChildren(didWill, op, isFromClient) {
+          const newP = _.clone(op.p);
           // var children = Ember.get(context, '_children');
-          var children = context.get('_children');
-          var childrenKeys = Object.keys(children);
-          if (Ember.isEmpty(childrenKeys))
-            return;
-          var child,
-            utils = this;
-          var counterToChild = _.mapKeys(children, function(v, childKey) {
-            if (utils.isOpOnArray(op) && !isNaN(+ _.last(childKey.split('.'))))
-              return 0
-            else
-              return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), utils.cutLast(op.p,op))
+          const children = context.get('_children');
+          const childrenKeys = Object.keys(children);
+          if (Ember.isEmpty(childrenKeys)) return;
+          let child;
+
+
+          const utils = this;
+          const counterToChild = _.mapKeys(children, (v, childKey) => {
+            if (utils.isOpOnArray(op) && !isNaN(+_.last(childKey.split('.')))) return 0;
+            return utils.matchingPaths(utils.cutLast(childKey.split('.'), op), utils.cutLast(op.p, op));
           });
-          var toNumber = function(strings) {
-            return _.map(strings, function(s) {
-              return + s
-            })
+          const toNumber = function (strings) {
+            return _.map(strings, s => +s);
           };
-          var chosenChild = counterToChild[_.max(toNumber(Object.keys(counterToChild)))]
-          if (didWill == 'Will')
-            chosenChild.trigger('before op', [op], isFromClient);
-          if (didWill == 'Did')
-            chosenChild.trigger('op', [op], isFromClient);
-          }
-        ,
+          const chosenChild = counterToChild[_.max(toNumber(Object.keys(counterToChild)))];
+          if (didWill == 'Will') chosenChild.trigger('before op', [op], isFromClient);
+          if (didWill == 'Did') chosenChild.trigger('op', [op], isFromClient);
+        },
 
-        beforeAfter: function(didWill) {
-          var utils = this;
-          var ex;
-          return function(ops, isFromClient) {
-
+        beforeAfter(didWill) {
+          const utils = this;
+          let ex;
+          return function (ops, isFromClient) {
             if (!isFromClient) {
-              _.forEach(ops, function(op) {
+              _.forEach(ops, (op) => {
                 if (utils.comparePathToChildren(op.p, op)) {
                   utils.triggerChildren(didWill, op, isFromClient);
-                } else {
-                  if (utils.isOpOnArray(op)) {
-                    ex = utils.extractArrayPath(op);
+                } else if (utils.isOpOnArray(op)) {
+                  ex = utils.extractArrayPath(op);
 
-                    context.get(ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
-                  } else {
-                    context["property" + didWill + "Change"](utils.prefixToChildLimiations(op.p.join('.')));
-                  }
+                  context.get(ex.p)[`arrayContent${didWill}Change`](ex.idx, ex.removeAmt, ex.addAmt);
+                } else {
+                  context[`property${didWill}Change`](utils.prefixToChildLimiations(op.p.join('.')));
                 }
               });
             }
           };
         },
 
-        beforeAfterChild: function(didWill) {
-          var utils = this;
-          var ex,
-            prefix,
-            _idx;
-          return function(ops, isFromClient) {
-            if (((_idx = Ember.get(context, '_idx')) != null) || !isFromClient) {
-              _.forEach(ops, function(op) {
+        beforeAfterChild(didWill) {
+          const utils = this;
+          let ex;
 
+
+          let prefix;
+
+
+          let _idx;
+          return function (ops, isFromClient) {
+            if (((_idx = Ember.get(context, '_idx')) != null) || !isFromClient) {
+              _.forEach(ops, (op) => {
                 if (op.p.join('.') == (prefix = Ember.get(context, '_prefix')) && didWill == 'Did') {
-                  if  (op.oi != null) {
-                    var content = context.get('_root.doc.data.' + prefix);
+                  if (op.oi != null) {
+                    const content = context.get(`_root.doc.data.${prefix}`);
                     context.replaceContent(content, true);
-                  } else {
-                    if (op.od != null) {
-                      var fatherPrefix = prefix.split('.');
-                      var key = fatherPrefix.pop();
-                      var father;
-                      if (!_.isEmpty(fatherPrefix) && (father = context.get('_children.' + fatherPrefix.join('.'))))
-                        father.removeKey(key);
-                      else
-                        context.get('_root').propertyDidChange(prefix)
-                    }
+                  } else if (op.od != null) {
+                    const fatherPrefix = prefix.split('.');
+                    const key = fatherPrefix.pop();
+                    var father;
+                    if (!_.isEmpty(fatherPrefix) && (father = context.get(`_children.${fatherPrefix.join('.')}`))) father.removeKey(key);
+                    else context.get('_root').propertyDidChange(prefix);
                   }
                 } else {
-                  var path = (_idx == null)
+                  const path = (_idx == null)
                     ? prefix.split('.')
                     : prefix.split('.').concat(String(_idx));
-                  var newP = _.difference(op.p, path);
+                  const newP = _.difference(op.p, path);
                   if (utils.comparePathToPrefix(op.p.join('.'), prefix)) {
                     if (utils.isOpOnArray(op) && (Ember.get(context, '_idx') == null)) {
-
                       var newOp = _.clone(op);
                       newOp.p = newP;
                       ex = utils.extractArrayPath(newOp);
 
-                      if (ex.p == "")
-                        context["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt)
-                      else
-                        Ember.get(context, ex.p)["arrayContent" + didWill + "Change"](ex.idx, ex.removeAmt, ex.addAmt);
-                      }
-                    else {
-                      if (newP.join('.') == '') {
-
-                        // delete self from father
-                        if (_.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
-                          var keyToRemove = path.pop();
-                          if (_.isEmpty(path)) {
-                            utils.removeChildren(keyToRemove, true);
-                          }
-                          else {
-                            var father = context.get('_children')[path.join('.')];
-                            father.removeKey (keyToRemove);
-                          }
-                        }
-                        else {
-                          // context["property" + didWill + "Change"]('content');
-                        }
-                      }
-
-                      else {
-
-                        if (op.oi && op.od == null) {
-                          context.addKey(_.first(newP))
-                        }
-
-                        if (op.od && op.oi == null) {
-                          context["notifyPropertyChange"](utils.prefixToChildLimiations(newP.join('.')));
-                          context.removeKey(_.first(newP))
+                      if (ex.p == '') context[`arrayContent${didWill}Change`](ex.idx, ex.removeAmt, ex.addAmt);
+                      else Ember.get(context, ex.p)[`arrayContent${didWill}Change`](ex.idx, ex.removeAmt, ex.addAmt);
+                    } else if (newP.join('.') == '') {
+                      // delete self from father
+                      if (_.isEmpty(newOp) && op.od && (op.oi == null) && (_.isEqual(op.od, context.toJson()))) {
+                        const keyToRemove = path.pop();
+                        if (_.isEmpty(path)) {
+                          utils.removeChildren(keyToRemove, true);
                         } else {
-                          context["property" + didWill + "Change"](utils.prefixToChildLimiations(newP.join('.')));
+                          var father = context.get('_children')[path.join('.')];
+                          father.removeKey(keyToRemove);
                         }
+                      } else {
+                        // context["property" + didWill + "Change"]('content');
+                      }
+                    } else {
+                      if (op.oi && op.od == null) {
+                        context.addKey(_.head(newP));
+                      }
 
+                      if (op.od && op.oi == null) {
+                        context.notifyPropertyChange(utils.prefixToChildLimiations(newP.join('.')));
+                        context.removeKey(_.head(newP));
+                      } else {
+                        context[`property${didWill}Change`](utils.prefixToChildLimiations(newP.join('.')));
                       }
                     }
                   }
                 }
               });
             }
-          }
+          };
         },
 
-        findMaxIndex: function (arr) {
-          return arr.indexOf(_.max(arr))
+        findMaxIndex(arr) {
+          return arr.indexOf(_.max(arr));
         },
 
-        extractArrayPath: function(op) {
+        extractArrayPath(op) {
           return {
-            idx: + _.last(op.p),
+            idx: +_.last(op.p),
             p: _.slice(op.p, 0, op.p.length - 1).join('.'),
-            addAmt: typeof op.li != 'undefined'
+            addAmt: typeof op.li !== 'undefined'
               ? 1
               : 0,
-            removeAmt: typeof op.ld != 'undefined'
+            removeAmt: typeof op.ld !== 'undefined'
               ? 1
-              : 0
-          }
-        }
+              : 0,
+          };
+        },
 
-      }
+      };
     }
   });
 define("ember-share/store", 
