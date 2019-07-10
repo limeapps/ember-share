@@ -6,16 +6,21 @@
 </head>
 <body>
   <div id='mocha'></div>
-  <script src='http://localhost:9999/share.js'></script>
-  <script src='../vendor/loader.js'></script>
-  <script src='../vendor/jquery.js'></script>
-  <script src='../vendor/handlebars.js'></script>
-  <script src='../vendor/ember.js'></script>
-  <script src='../dist/ember-share.amd.js'></script>
+
+
+  <script src='vendor/jquery.js'></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/ember.js/1.13.13/ember.js"></script> -->
+  <script src='vendor/ember13.min.js'></script>
   <script src='vendor/chai.js'></script>
   <script src='vendor/chai-as-promised.js'></script>
   <script src='vendor/mocha.js'></script>
-  <script src='vendor/primus.js'></script>
+  <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/mocha/2.5.0/mocha.js'></script> -->
+  <script src='vendor/lodash.min.js'></script>
+  <script src='vendor/primus.min.js'></script>
+  <script src='vendor/ember-data.min.js'></script>
+  <script src='vendor/es6-promise.auto.js'> </script>
+  <script src='http://localhost:3333/share-client.js'></script>
+  <script src="http://localhost:1333/livereload.js"></script>
   <script>
     mocha.setup({
       ui: 'bdd',
@@ -23,15 +28,10 @@
     });
     mocha.globals(['setTimeout']);
   </script>
-  <script src='../tmp/tests.amd.js'></script>
+  <script src='tests.js'></script>
   <script>
-
-    Object.keys(require.entries).filter(function(file) {
-      return /_test$/.test(file);
-    }).map(require);
-
     if (window.mochaPhantomJS) { mochaPhantomJS.run(); }
-    else { mocha.globals(['setTimeout']); mocha.run(); }
+    else {      mocha.globals(['setTimeout']); mocha.run();    }
   </script>
 </body>
 </html>
