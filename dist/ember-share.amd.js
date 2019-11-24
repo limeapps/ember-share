@@ -1394,8 +1394,9 @@ define("ember-share/store",
               }
               resolve(
                 store._resolveModels(type, results).then(function (models) {
-                  return fetchedResult = models;
-                }), _query
+                  fetchedResult = models;
+                  return { models, query: _query }
+                })
               );
             }
             _query = store.connection.createSubscribeQuery(prefix + type, query, null, fetchQueryCallback);
