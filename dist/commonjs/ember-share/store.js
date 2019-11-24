@@ -246,7 +246,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
     return this.checkConnection()
     .then(function(){
       return new Promise(function (resolve, reject) {
-        var fetchedResult;
+        var fetchedResult, _query;
         function fetchQueryCallback(err, results, extra) {
           if (err !== null) {
             return reject(err);
@@ -254,16 +254,16 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
           resolve(
             store._resolveModels(type, results).then(function (models) {
               return fetchedResult = models;
-            })
+            }), _query
           );
         }
-        query = store.connection.createSubscribeQuery(prefix + type, query, null, fetchQueryCallback);
-        query.on('insert', function (docs) {
+        _query = store.connection.createSubscribeQuery(prefix + type, query, null, fetchQueryCallback);
+        _query.on('insert', function (docs) {
           store._resolveModels(type, docs).then(function (models) {
               return fetchedResult.addObjects(models);
             })
         });
-        query.on('remove', function (docs) {
+        _query.on('remove', function (docs) {
           store._resolveModels(type, docs).then(function (models) {
               _.forEach(models, function (model) {
                 store.unload(type, model);
