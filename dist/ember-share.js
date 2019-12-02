@@ -441,11 +441,14 @@ define("ember-share/models/model",
 
 
       willDestroy() {
-        const utils = Utils(this);
-        this.get('doc').destroy();
-        this._super.apply(this, arguments);
-        utils.removeChildren();
-        console.log('destroying children');
+        console.log('willdestroy doc', this.get('doc'))
+        if(this.get('doc')) {
+          const utils = Utils(this);
+          this.get('doc').destroy();
+          this._super.apply(this, arguments);
+          utils.removeChildren();
+          console.log('destroying children');
+        }
       },
 
     });
