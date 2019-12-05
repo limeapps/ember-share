@@ -439,15 +439,13 @@ define("ember-share/models/model",
         this.set('oldDoc', doc);
       }).observes('doc').on('init'),
 
-
       willDestroy() {
-        console.log('willdestroy doc', this.get('doc'))
-        if(this.get('doc')) {
-          const utils = Utils(this);
-          this.get('doc').destroy();
-          this._super.apply(this, arguments);
-          utils.removeChildren();
-          console.log('destroying children');
+        if (this.get('doc')) {
+          this.get('doc').destroy(() => {
+            const utils = Utils(this);
+            this._super.apply(this, arguments);
+            utils.removeChildren();
+          });
         }
       },
 
@@ -1433,7 +1431,7 @@ define("ember-share/store",
             } else {
               store.findQuery(type, {_id: id})
                 .then(function(results){
-                  resolve(results[0])
+                  resolve(results[0]);
                 })
                 .catch(function (err){
                   reject(err)
@@ -1579,33 +1577,43 @@ define("ember-share/store",
           });
         });
       },
-      unloadRecord: function (doc) {
-        var cache = this.cache[doc.get("_type")];
-        doc.get('doc').destroy();
-        doc.destroy();
-        cache.removeObject(doc);
-        return this
+      unloadRecord: function (doc, cb) {
+        let cache = this.cache[doc.get('_type')];
+        doc.get('doc').destroy(() => { 
+          cache.removeObject(doc);
+          doc.destroy();
+          if (typeof cb === 'function') return cb();
+        });
+        return this;
       },
       unload: function (type, doc) {
         type = type.pluralize();
         var cache = this._cacheFor(type);
         try {
-          doc.get('doc').destroy()
+          doc.get('doc').destroy(() => {
+            cache.removeObject(doc)
+            doc.destroy();
+          })
         } catch (e) {
 
         }
-        doc.destroy()
-        cache.removeObject(doc)
       },
-      unloadAll: function (type) {
+      unloadAll: async function (type) {
         try
           {
+            var promises = []
             var cache = this.cache[type.pluralize()];
             for (var i = 0; i < cache.length; i++) {
-              var doc = cache[i];
-              doc.get('doc').destroy();
-              doc.destroy();
+              var p = new Promise((resolve) => {
+                var doc = cache[i];
+                doc.get('doc').destroy(() => {
+                  doc.destroy();
+                  resolve();
+                });
+              });
+              promises.push(p);
             }
+            await Promise.all(promises);
             cache.removeObjects(cache);
           }
         catch (err){
