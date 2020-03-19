@@ -119,6 +119,410 @@ define("ember-share/belongs-to",
 
     }
   });
+define("ember-share/inflector/inflections", 
+  ["exports"],
+  function(__exports__) {
+    "use strict";
+
+    __exports__["default"] = {
+        plurals: [
+            [/$/, 's'],
+            [/s$/i, 's'],
+            [/^(ax|test)is$/i, '$1es'],
+            [/(octop|vir)us$/i, '$1i'],
+            [/(octop|vir)i$/i, '$1i'],
+            [/(alias|status|bonus)$/i, '$1es'],
+            [/(bu)s$/i, '$1ses'],
+            [/(buffal|tomat)o$/i, '$1oes'],
+            [/([ti])um$/i, '$1a'],
+            [/([ti])a$/i, '$1a'],
+            [/sis$/i, 'ses'],
+            [/(?:([^f])fe|([lr])f)$/i, '$1$2ves'],
+            [/(hive)$/i, '$1s'],
+            [/([^aeiouy]|qu)y$/i, '$1ies'],
+            [/(x|ch|ss|sh)$/i, '$1es'],
+            [/(matr|vert|ind)(?:ix|ex)$/i, '$1ices'],
+            [/^(m|l)ouse$/i, '$1ice'],
+            [/^(m|l)ice$/i, '$1ice'],
+            [/^(ox)$/i, '$1en'],
+            [/^(oxen)$/i, '$1'],
+            [/(quiz)$/i, '$1zes']
+        ],
+
+        singular: [
+            [/s$/i, ''],
+            [/(ss)$/i, '$1'],
+            [/(n)ews$/i, '$1ews'],
+            [/([ti])a$/i, '$1um'],
+            [/((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)(sis|ses)$/i, '$1sis'],
+            [/(^analy)(sis|ses)$/i, '$1sis'],
+            [/([^f])ves$/i, '$1fe'],
+            [/(hive)s$/i, '$1'],
+            [/(tive)s$/i, '$1'],
+            [/([lr])ves$/i, '$1f'],
+            [/([^aeiouy]|qu)ies$/i, '$1y'],
+            [/(s)eries$/i, '$1eries'],
+            [/(m)ovies$/i, '$1ovie'],
+            [/(x|ch|ss|sh)es$/i, '$1'],
+            [/^(m|l)ice$/i, '$1ouse'],
+            [/(bus)(es)?$/i, '$1'],
+            [/(o)es$/i, '$1'],
+            [/(shoe)s$/i, '$1'],
+            [/(cris|test)(is|es)$/i, '$1is'],
+            [/^(a)x[ie]s$/i, '$1xis'],
+            [/(octop|vir)(us|i)$/i, '$1us'],
+            [/(alias|status|bonus)(es)?$/i, '$1'],
+            [/^(ox)en/i, '$1'],
+            [/(vert|ind)ices$/i, '$1ex'],
+            [/(matr)ices$/i, '$1ix'],
+            [/(quiz)zes$/i, '$1'],
+            [/(database)s$/i, '$1']
+        ],
+
+        irregularPairs: [
+            ['person', 'people'],
+            ['man', 'men'],
+            ['child', 'children'],
+            ['sex', 'sexes'],
+            ['move', 'moves'],
+            ['cow', 'kine'],
+            ['zombie', 'zombies']
+        ],
+
+        uncountable: [
+            'equipment',
+            'information',
+            'rice',
+            'money',
+            'species',
+            'series',
+            'fish',
+            'sheep',
+            'jeans',
+            'police'
+        ]
+    };
+  });
+define("ember-share/inflector/inflector", 
+  ["./inflections","exports"],
+  function(__dependency1__, __exports__) {
+    "use strict";
+    var capitalize = _.capitalize;
+    var defaultRules = __dependency1__["default"];
+
+    const BLANK_REGEX = /^\s*$/;
+    const LAST_WORD_DASHED_REGEX = /([\w/-]+[_/\s-])([a-z\d]+$)/;
+    const LAST_WORD_CAMELIZED_REGEX = /([\w/\s-]+)([A-Z][a-z\d]*$)/;
+    const CAMELIZED_REGEX = /[A-Z][a-z\d]*$/;
+
+    function loadUncountable(rules, uncountable) {
+        for (let i = 0, length = uncountable.length; i < length; i++) {
+            rules.uncountable[uncountable[i].toLowerCase()] = true;
+        }
+    }
+
+    function loadIrregular(rules, irregularPairs) {
+        let pair;
+
+        for (let i = 0, length = irregularPairs.length; i < length; i++) {
+            pair = irregularPairs[i];
+
+            //pluralizing
+            rules.irregular[pair[0].toLowerCase()] = pair[1];
+            rules.irregular[pair[1].toLowerCase()] = pair[1];
+
+            //singularizing
+            rules.irregularInverse[pair[1].toLowerCase()] = pair[0];
+            rules.irregularInverse[pair[0].toLowerCase()] = pair[0];
+        }
+    }
+
+    /**
+     Inflector.Ember provides a mechanism for supplying inflection rules for your
+     application. Ember includes a default set of inflection rules, and provides an
+     API for providing additional rules.
+
+     Examples:
+
+     Creating an inflector with no rules.
+
+     ```js
+     var inflector = new Ember.Inflector();
+     ```
+
+     Creating an inflector with the default ember ruleset.
+
+     ```js
+     var inflector = new Ember.Inflector(Ember.Inflector.defaultRules);
+
+     inflector.pluralize('cow'); //=> 'kine'
+     inflector.singularize('kine'); //=> 'cow'
+     ```
+
+     Creating an inflector and adding rules later.
+
+     ```javascript
+     var inflector = Ember.Inflector.inflector;
+
+     inflector.pluralize('advice'); // => 'advices'
+     inflector.uncountable('advice');
+     inflector.pluralize('advice'); // => 'advice'
+
+     inflector.pluralize('formula'); // => 'formulas'
+     inflector.irregular('formula', 'formulae');
+     inflector.pluralize('formula'); // => 'formulae'
+
+     // you would not need to add these as they are the default rules
+     inflector.plural(/$/, 's');
+     inflector.singular(/s$/i, '');
+     ```
+
+     Creating an inflector with a nondefault ruleset.
+
+     ```javascript
+     var rules = {
+        plurals:  [
+          [ /$/, 's' ]
+        ],
+        singular: [
+          [ /\s$/, '' ]
+        ],
+        irregularPairs: [
+          [ 'cow', 'kine' ]
+        ],
+        uncountable: [ 'fish' ]
+      };
+
+     var inflector = new Ember.Inflector(rules);
+     ```
+
+     @class Inflector
+     @namespace Ember
+     */
+    function Inflector(ruleSet) {
+        ruleSet = ruleSet || {};
+        ruleSet.uncountable = ruleSet.uncountable || makeDictionary();
+        ruleSet.irregularPairs = ruleSet.irregularPairs || makeDictionary();
+
+        const rules = this.rules = {
+            plurals:  ruleSet.plurals || [],
+            singular: ruleSet.singular || [],
+            irregular: makeDictionary(),
+            irregularInverse: makeDictionary(),
+            uncountable: makeDictionary()
+        };
+
+        loadUncountable(rules, ruleSet.uncountable);
+        loadIrregular(rules, ruleSet.irregularPairs);
+
+        this.enableCache();
+    }
+
+    if (!Object.create && !Object.create(null).hasOwnProperty) {
+        throw new Error("This browser does not support Object.create(null), please polyfil with es5-sham: http://git.io/yBU2rg");
+    }
+
+    function makeDictionary() {
+        var cache = Object.create(null);
+        cache['_dict'] = null;
+        delete cache['_dict'];
+        return cache;
+    }
+
+    Inflector.prototype = {
+        /**
+         @public
+
+         As inflections can be costly, and commonly the same subset of words are repeatedly
+         inflected an optional cache is provided.
+
+         @method enableCache
+         */
+        enableCache() {
+            this.purgeCache();
+
+            this.singularize = function(word) {
+                this._cacheUsed = true;
+                return this._sCache[word] || (this._sCache[word] = this._singularize(word));
+            };
+
+            this.pluralize = function(numberOrWord, word, options = {}) {
+                this._cacheUsed = true;
+                var cacheKey = [numberOrWord, word, options.withoutCount]
+                return this._pCache[cacheKey] || (this._pCache[cacheKey] = this._pluralize(numberOrWord, word, options));
+            };
+        },
+
+        /**
+         @public
+
+         @method purgeCache
+         */
+        purgeCache() {
+            this._cacheUsed = false;
+            this._sCache = makeDictionary();
+            this._pCache = makeDictionary();
+        },
+
+        /**
+         @public
+         disable caching
+
+         @method disableCache;
+         */
+        disableCache() {
+            this._sCache = null;
+            this._pCache = null;
+            this.singularize = function(word) {
+                return this._singularize(word);
+            };
+
+            this.pluralize = function() {
+                return this._pluralize(...arguments);
+            };
+        },
+
+        /**
+         @method plural
+         @param {RegExp} regex
+         @param {String} string
+         */
+        plural(regex, string) {
+            if (this._cacheUsed) { this.purgeCache(); }
+            this.rules.plurals.push([regex, string.toLowerCase()]);
+        },
+
+        /**
+         @method singular
+         @param {RegExp} regex
+         @param {String} string
+         */
+        singular(regex, string) {
+            if (this._cacheUsed) { this.purgeCache(); }
+            this.rules.singular.push([regex, string.toLowerCase()]);
+        },
+
+        /**
+         @method uncountable
+         @param {String} regex
+         */
+        uncountable(string) {
+            if (this._cacheUsed) { this.purgeCache(); }
+            loadUncountable(this.rules, [string.toLowerCase()]);
+        },
+
+        /**
+         @method irregular
+         @param {String} singular
+         @param {String} plural
+         */
+        irregular(singular, plural) {
+            if (this._cacheUsed) { this.purgeCache(); }
+            loadIrregular(this.rules, [[singular, plural]]);
+        },
+
+        /**
+         @method pluralize
+         @param {String} word
+         */
+        pluralize() {
+            return this._pluralize(...arguments);
+        },
+
+        _pluralize(wordOrCount, word, options = {}) {
+            if (word === undefined) {
+                return this.inflect(wordOrCount, this.rules.plurals, this.rules.irregular);
+            }
+
+            if (parseFloat(wordOrCount) !== 1) {
+                word = this.inflect(word, this.rules.plurals, this.rules.irregular);
+            }
+
+            return options.withoutCount ? word : `${wordOrCount} ${word}`;
+        },
+
+        /**
+         @method singularize
+         @param {String} word
+         */
+        singularize(word) {
+            return this._singularize(word);
+        },
+
+        _singularize(word) {
+            return this.inflect(word, this.rules.singular,  this.rules.irregularInverse);
+        },
+
+        /**
+         @protected
+
+         @method inflect
+         @param {String} word
+         @param {Object} typeRules
+         @param {Object} irregular
+         */
+        inflect(word, typeRules, irregular) {
+            let inflection, substitution, result, lowercase, wordSplit,
+                lastWord, isBlank, isCamelized, rule, isUncountable;
+
+            isBlank = !word || BLANK_REGEX.test(word);
+            isCamelized = CAMELIZED_REGEX.test(word);
+
+            if (isBlank) {
+                return word;
+            }
+
+            lowercase = word.toLowerCase();
+            wordSplit = LAST_WORD_DASHED_REGEX.exec(word) || LAST_WORD_CAMELIZED_REGEX.exec(word);
+
+            if (wordSplit){
+                lastWord = wordSplit[2].toLowerCase();
+            }
+
+            isUncountable = this.rules.uncountable[lowercase] || this.rules.uncountable[lastWord];
+
+            if (isUncountable) {
+                return word;
+            }
+
+            for (rule in irregular) {
+                if (lowercase.match(rule+"$")) {
+                    substitution = irregular[rule];
+
+                    if (isCamelized && irregular[lastWord]) {
+                        substitution = capitalize(substitution);
+                        rule = capitalize(rule);
+                    }
+
+                    return word.replace(new RegExp(rule, 'i'), substitution);
+                }
+            }
+
+            for (var i = typeRules.length, min = 0; i > min; i--) {
+                inflection = typeRules[i-1];
+                rule = inflection[0];
+
+                if (rule.test(word)) {
+                    break;
+                }
+            }
+
+            inflection = inflection || [];
+
+            rule = inflection[0];
+            substitution = inflection[1];
+
+            result = word.replace(rule, substitution);
+
+            return result;
+        }
+    };
+
+    Inflector.defaultRules = defaultRules;
+    Inflector.inflector = new Inflector(defaultRules);
+
+    __exports__["default"] = Inflector.inflector;
+  });
 define("ember-share/mixins/share-text", 
   ["../utils","exports"],
   function(__dependency1__, __exports__) {
@@ -1138,21 +1542,25 @@ define("ember-share/models/utils",
     }
   });
 define("ember-share/store", 
-  ["./utils","exports"],
-  function(__dependency1__, __exports__) {
+  ["./utils","./inflector/inflector","exports"],
+  function(__dependency1__, __dependency2__, __exports__) {
     "use strict";
     /* global BCSocket:false, sharedb:false */
     var guid = __dependency1__.guid;
     var patchShare = __dependency1__.patchShare;
-    // import DS from 'ember-data'
-    var ObjectPromiseProxy = Ember.ObjectProxy.extend(Ember.PromiseProxyMixin);
+    var inflector = __dependency2__["default"];
+    let { singularize, pluralize } = inflector;
+    singularize = singularize.bind(inflector);
+    pluralize = pluralize.bind(inflector);
     var Promise = Ember.RSVP.Promise;
     var socketReadyState = [
       'CONNECTING',
       'OPEN',
       'CLOSING',
       'CLOSE'
-    ]
+    ];
+
+    var ObjectPromiseProxy = Ember.ObjectProxy.extend(Ember.PromiseProxyMixin);
 
     __exports__["default"] = Ember.Object.extend(Ember.Evented, {
       socket: null,
@@ -1333,7 +1741,7 @@ define("ember-share/store",
 
       }.on('connect'),
       find: function (type, id) {
-        type = type.pluralize()
+        type = pluralize(type);
         var store = this;
         return this.checkConnection()
           .then(function(){
@@ -1346,9 +1754,9 @@ define("ember-share/store",
       },
       createRecord: function (type, data) {
         var ref, path;
-        path =  (ref = this._getPathForType(type)) ? ref : type.pluralize()
+        path =  (ref = this._getPathForType(type)) ? ref : type.pluralize();
         path = this._getPrefix(type) + path;
-        type = type.pluralize()
+        type = pluralize(type);
         var store = this;
         return store.checkConnection()
           .then(function(){
@@ -1366,7 +1774,7 @@ define("ember-share/store",
           });
       },
       deleteRecord : function(type, id) {
-        var cache = this._cacheFor(type.pluralize());
+        var cache = this._cacheFor(pluralize(type));
         var model = cache.findBy('id', id);
         var doc = model.get('doc');
         return new Promise(function (resolve, reject) {
@@ -1380,7 +1788,7 @@ define("ember-share/store",
         })
       },
       findAndSubscribeQuery: function(type, query) {
-        type = type.pluralize()
+        type = pluralize(type);
         var store = this;
         var prefix = this._getPrefix(type);
         //store.cache[type] = []
@@ -1419,7 +1827,7 @@ define("ember-share/store",
       },
       findRecord: function (type, id) {
         var store = this;
-        var cache = store.cache[type.pluralize()]
+        var cache = store.cache[pluralize(type)]
         return ObjectPromiseProxy.create ({
           promise: new Promise(function (resolve, reject){
             try {
@@ -1456,12 +1864,12 @@ define("ember-share/store",
         // })
       },
       findQuery: function (type, query) {
-        // type = type.pluralize()
+        // type = pluralize(type)
         var ref, path;
-        path =  (ref = this._getPathForType(type)) ? ref : type.pluralize()
+        path =  (ref = this._getPathForType(type)) ? ref : pluralize(type)
         path = this._getPrefix(type) + path;
         var store = this;
-        //store.cache[type.pluralize()] = []
+        //store.cache[pluralize(type)] = []
         return this.checkConnection()
         .then(function(){
           return new Promise(function (resolve, reject) {
@@ -1476,12 +1884,12 @@ define("ember-share/store",
         });
       },
       findAll: function (type, query) {
-        type = type.pluralize()
+        type = pluralize(type)
         throw new Error('findAll not implemented');
         // TODO this.connection subscribe style query
       },
       _cacheFor: function (type) {
-        type = type.pluralize()
+        type = pluralize(type)
         var cache = this.cache[type];
         if (cache === undefined) {
           this.cache[type] = cache = [];
@@ -1489,34 +1897,32 @@ define("ember-share/store",
         return cache;
       },
       _getPathForType: function (type) {
-        var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
-        if (Adapter)
-          return Adapter.create().pathForType(type);
+        var Adapter = Ember.getOwner(this).lookup('adapter:' + singularize(type));
+        if (Adapter && Adapter.pathForType)
+          return Adapter.pathForType(type);
       },
       _getPrefix: function (type) {
-        var Adapter = this.container.lookupFactory('adapter:' + type.singularize());
+        var Adapter = Ember.getOwner(this).lookup('adapter:' + singularize(type));
         var prefix;
         if (Adapter)
-          prefix = Adapter.create().get('prefix');
+          prefix = Adapter.get('prefix');
         if (!prefix) prefix = '';
         return prefix
       },
       _factoryFor: function (type) {
         var ref;
-        var modelStr = (ref = this.get('modelStr')) ? ref : 'model-sdb'
-        return this.container.lookupFactory(modelStr + ':'+ type.singularize());
+        var modelStr = (ref = this.get('modelStr')) ? ref : 'model-sdb';
+        return Ember.getOwner(this).factoryFor(modelStr + ':'+ singularize(type));
       },
       _createModel: function (type, doc) {
         var modelClass = this._factoryFor(type);
-        type = type.pluralize()
         if(modelClass)
         {
-          var model = modelClass.create({
+          return modelClass.create({
             doc: doc,
-            _type: type,
+            _type: pluralize(type),
             _store: this
           });
-          return model;
         }
         else
         {
@@ -1524,7 +1930,7 @@ define("ember-share/store",
         }
       },
       _resolveModel: function (type, doc) {
-        var cache = this._cacheFor(type.pluralize());
+        var cache = this._cacheFor(pluralize(type));
         var id = Ember.get(doc, 'id') || Ember.get(doc, '_id');
         var model = cache.findBy('id', id);
         if (model !== undefined) {
@@ -1536,9 +1942,9 @@ define("ember-share/store",
         });
       },
       _resolveModels: function (type, docs) {
-        // type = type.pluralize()
+        // type = pluralize(type)
         var store = this;
-        var cache = this._cacheFor(type.pluralize());
+        var cache = this._cacheFor(pluralize(type));
         var models = [];
         var promises = [];
         for (var i=0; i<docs.length; i++) {
@@ -1584,20 +1990,20 @@ define("ember-share/store",
         return this
       },
       unload: function (type, doc) {
-        type = type.pluralize();
+        type = pluralize(type);
         var cache = this._cacheFor(type);
         try {
           doc.get('doc').destroy()
         } catch (e) {
 
         }
-        doc.destroy()
-        cache.removeObject(doc)
+        doc.destroy();
+        cache.removeObject(doc);
       },
       unloadAll: function (type) {
         try
           {
-            var cache = this.cache[type.pluralize()];
+            var cache = this.cache[pluralize(type)];
             for (var i = 0; i < cache.length; i++) {
               var doc = cache[i];
               doc.get('doc').destroy();
@@ -1610,7 +2016,7 @@ define("ember-share/store",
         }
       },
       peekAll: function (type) {
-        type = type.pluralize()
+        type = pluralize(type);
         return this._cacheFor(type);
       },
       /* returns Promise for when sharedb doc is subscribed */

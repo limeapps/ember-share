@@ -363,6 +363,17 @@ module.exports = ->
           done()
         .catch done
 
+    it.skip 'op came from an a property that is is not an attribute', (done) ->
+
+      op = p: [ 'arr', 1 ], li: 2
+#      op = p: [ 'str' ], oi: 'is', od: "as"
+      postJson 'op/', createDataOp(op), 100
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          console.log(schedule)
+          done()
+        .catch done
+
     it 'test nestedArray replace', (done) ->
       @timeout 4000
       nestedArray = schedule.get 'nestedArray'

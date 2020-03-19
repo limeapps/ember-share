@@ -101,3 +101,6 @@ module.exports = ->
           startTime: 1
           endTime: 2
       ]
+
+    arr: [ 1 ]
+    str: 'as'
