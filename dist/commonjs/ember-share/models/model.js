@@ -57,13 +57,14 @@ const SDBRoot = SDBBase.extend({
 
 
   willDestroy() {
-    const utils = Utils(this);
-    this.get('doc').destroy();
-    this._super.apply(this, arguments);
-    utils.removeChildren();
-    console.log('destroying children');
+    if (this.get('doc')) {
+      this.get('doc').destroy(() => {
+        const utils = Utils(this);
+        this._super.apply(this, arguments);
+        utils.removeChildren();
+      });
+    }
   },
-
 });
 
 

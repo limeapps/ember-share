@@ -844,13 +844,14 @@ define("ember-share/models/model",
 
 
       willDestroy() {
-        const utils = Utils(this);
-        this.get('doc').destroy();
-        this._super.apply(this, arguments);
-        utils.removeChildren();
-        console.log('destroying children');
+        if (this.get('doc')) {
+          this.get('doc').destroy(() => {
+            const utils = Utils(this);
+            this._super.apply(this, arguments);
+            utils.removeChildren();
+          });
+        }
       },
-
     });
 
 
@@ -1981,18 +1982,23 @@ define("ember-share/store",
           });
         });
       },
-      unloadRecord: function (doc) {
-        var cache = this.cache[doc.get("_type")];
-        doc.get('doc').destroy();
-        doc.destroy();
-        cache.removeObject(doc);
-        return this
+      unloadRecord: function (doc, cb) {
+        let cache = this.cache[doc.get('_type')];
+        doc.get('doc').destroy(() => {
+          cache.removeObject(doc);
+          doc.destroy();
+          if (typeof cb === 'function') return cb();
+        });
+        return this;
       },
       unload: function (type, doc) {
         type = pluralize(type);
         var cache = this._cacheFor(type);
         try {
-          doc.get('doc').destroy()
+          doc.get('doc').destroy(() => {
+            cache.removeObject(doc);
+            doc.destroy();
+          })
         } catch (e) {
 
         }
@@ -2000,19 +2006,23 @@ define("ember-share/store",
         cache.removeObject(doc);
       },
       unloadAll: function (type) {
-        try
-          {
-            var cache = this.cache[pluralize(type)];
-            for (var i = 0; i < cache.length; i++) {
-              var doc = cache[i];
-              doc.get('doc').destroy();
-              doc.destroy();
-            }
-            cache.removeObjects(cache);
-          }
-        catch (err){
-
-        }
+        return new Promise((resolve, reject) => {
+          var cache = this.cache[pluralize(type)] || [];
+          const promises = cache.map(doc => {
+            return new Promise(resolve => {
+              doc.get('doc').destroy(() => {
+                doc.destroy();
+                resolve();
+              })
+            })
+          });
+          return Promise.all(promises)
+              .then(() => {
+                cache.removeObjects(cache);
+                resolve()
+              })
+              .catch(reject);
+        });
       },
       peekAll: function (type) {
         type = pluralize(type);
