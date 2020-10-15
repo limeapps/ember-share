@@ -140,7 +140,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
       else {
         hostname += ':' + 80;
       }
-      this.socket = new Primus(hostname);
+      this.socket = new Primus(hostname, options);
       // console.log('connection starting');
 
       this.socket.on('error', function error(err) {
