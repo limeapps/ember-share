@@ -1024,7 +1024,7 @@ define("ember-share/models/sub-array",
           }
           this.arrayContentDidChange(start, len, objects.length);
           var realContent = this.get('doc.data.' + this.get('_prefix'));
-          if ((_.isEqual(objects, realContent)) && !(_.isEqual(this.get('content'),realContent))) {
+          if (!_.isEqual(this.get('content'),realContent)) {
             this.onChangeDoc()
           }
           return this
