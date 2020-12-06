@@ -292,12 +292,12 @@ module.exports = ->
     it 'Array pushObject', ->
       order = schedule.get 'orderObj'
       order.addKey 'vehicles'
-      schedule.set 'orderObj.vehicles', []
+      schedule.set 'orderObj.vehicles', ['c']
         #order.get('vehicles').addObject 'd'
       vehicles = schedule.get('orderObj.vehicles')
       vehicles.pushObject 'd'
       newOrder = schedule.get 'orderObj.vehicles'
-      assert.deepEqual [ 'd' ], (toJson newOrder.get 'content')
+      assert.deepEqual [ 'c','d' ], (toJson newOrder.get 'content')
        #opShouldBeSent = [ p:['order', 3], li: 'd']
        #assert.deepEqual schedule.get('doc.opsSent')[0], opShouldBeSent
 
