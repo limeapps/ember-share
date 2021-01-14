@@ -33,7 +33,6 @@ module.exports =
         return res.send errorFetch: err if err?
         try
           doc.submitOp [op], (err) ->
-
           if err?
             res.send errorSubmit: err
           else

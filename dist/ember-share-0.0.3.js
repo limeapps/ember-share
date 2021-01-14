@@ -1457,11 +1457,7 @@ define("ember-share/models/utils",
         beforeAfterChild(didWill) {
           const utils = this;
           let ex;
-
-
           let prefix;
-
-
           let _idx;
           return function (ops, isFromClient) {
             if (((_idx = Ember.get(context, '_idx')) != null) || !isFromClient) {
@@ -1510,7 +1506,9 @@ define("ember-share/models/utils",
 
                       if (op.od && op.oi == null) {
                         context.notifyPropertyChange(utils.prefixToChildLimiations(newP.join('.')));
-                        context.removeKey(_.head(newP));
+                        if (newP.length === 1) {
+                          context.removeKey(_.head(newP));
+                        }
                       } else {
                         context[`property${didWill}Change`](utils.prefixToChildLimiations(newP.join('.')));
                       }

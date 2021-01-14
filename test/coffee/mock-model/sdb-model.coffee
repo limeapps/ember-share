@@ -18,6 +18,7 @@ module.exports = ShareProxy.extend
   unsaved: attr 'boolean'
   discarded: attr 'boolean'
   trips: attr()
+  events: attr()
   routes: attr()
   stops: attr()
   preferences: attr()
@@ -36,4 +37,4 @@ module.exports = ShareProxy.extend
 
   limitedObject: attr()
 
-  _childLimiations: ['limitedObject', 'preferences', 'duties/b/schedule_events']
+  _childLimiations: ['limitedObject', 'preferences', 'duties/b/schedule_events', 'events/*/*']

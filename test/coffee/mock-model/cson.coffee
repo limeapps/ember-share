@@ -47,6 +47,15 @@ module.exports = ->
   revision: 1
   name: 'my mocked schedule'
   createdAt: 'Mon Mar 27 2017 14:42:07 GMT+0300 (IDT)'
+  events:
+    service_trip:
+      id_1:
+        name: 3
+    stand_by:
+      id_1:
+        name: 1
+      id_2:
+        name: 2
   broken: false
   duties:
     a:

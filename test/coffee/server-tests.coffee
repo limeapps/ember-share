@@ -408,6 +408,21 @@ module.exports = ->
           done()
         .catch done
 
+    it 'parent key is persisted on child deletion', ->
+      serviceTrips = schedule.get('events.service_trip.id_1')
+
+      op =
+        p: ['events', 'stand_by', 'id_1']
+        od: name: 1
+
+      postJson 'op/', createDataOp(op), 10
+        .then (response) ->
+          assert.equal response?.msg, 'Success'
+          assert.isUndefined schedule.doc.data.events.stand_by.id_1
+          assert.isDefined schedule.doc.data.events.stand_by.id_2
+          assert.isDefined schedule.get('events.stand_by.id_2')
+          assert.isUndefined schedule.get('events.stand_by.id_1')
+
 
     # it 'Child Limiations (Array)', (done) ->
     #   Obj = Ember.Object.extend

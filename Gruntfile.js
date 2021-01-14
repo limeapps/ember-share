@@ -83,14 +83,6 @@ module.exports = function (grunt) {
     'build',
     'coffeeify:tests',
     'watch:coffeeTests',
-
-  ]);
-  this.registerTask('phantomTests', [
-    'clean:tests',
-    'build',
-    'coffeeify:tests',
-    'mocha_phantomjs:phantom',
-
   ]);
   // Custom YUIDoc task
   this.registerTask('docs', ['yuidoc']);
@@ -100,7 +92,6 @@ module.exports = function (grunt) {
 
   // Load custom tasks from NPM
   grunt.loadNpmTasks('grunt-browserify');
-  grunt.loadNpmTasks('grunt-mocha-phantomjs');
   grunt.loadNpmTasks('grunt-mocha-test');
   grunt.loadNpmTasks('grunt-contrib-yuidoc');
   grunt.loadNpmTasks('grunt-release-it');
