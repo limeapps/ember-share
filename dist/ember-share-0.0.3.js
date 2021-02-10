@@ -1153,9 +1153,8 @@ define("ember-share/models/sub-mixin",
               var child = self.get['_children'][prefixArr.join('.')]
               if (child != null)
                 child.notifyPropertyChange(prefixArr.join('.') + '.' + keys.join('.'))
-              else
-                keys.push(prefixArr.pop());
-                notifyFather(prefixArr, keys);
+              else keys.push(prefixArr.pop());
+              notifyFather(prefixArr, keys);
             }
           };
           var prefixArr = prefix.split('.')
@@ -1175,8 +1174,8 @@ define("ember-share/models/sub-mixin",
           this.get('_subProps').removeObjects(toDelete);
           Ember.setProperties(this, {tempContent: content});
           this.createInnerAttrs();
-          this.notifyDidProperties(this.get('_subProps').toArray());
         }
+        this.notifyDidProperties(this.get('_subProps').toArray());
 
         return this
       },
