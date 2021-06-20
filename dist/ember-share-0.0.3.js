@@ -1557,6 +1557,7 @@ define("ember-share/store",
       'CLOSING',
       'CLOSE'
     ];
+    var MAX_NUMBER_OF_FAILS = 15;
 
     var ObjectPromiseProxy = Ember.ObjectProxy.extend(Ember.PromiseProxyMixin);
 
@@ -1597,18 +1598,24 @@ define("ember-share/store",
                       return reject('connection closing');
                   }
                 }
-                var failed = false
-                checkState(store.connection.state, function(state){
-                  if (failed)
+                var numberOfFails = 0;
+                var checkStateRecursivly = function(state){
+                  numberOfFails += 1;
+                  if (numberOfFails === MAX_NUMBER_OF_FAILS)
                     checkStateFail(state)
-                  else
-                    Ember.run.next (this, function () {
-                      failed = true;
-                      checkState(store.connection.state, checkStateFail)
-                    })
-                })
+                  else {
+                    if (numberOfFails === 1) {
+                      // Force reconnection on first fail
+                      store.socket.end()
+                      store.socket.open()
+                    }
+                    Ember.run.later (this, function () {
+                      checkState(store.connection.state, checkStateRecursivly)
+                    }, 1000)
+                  }
+                }
 
-
+                checkState(store.connection.state, checkStateRecursivly)
             }
           });
         }
