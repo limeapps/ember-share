@@ -107,7 +107,8 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
     if ( this.beforeConnect )
     {
       this.beforeConnect()
-      .then(function(){
+      .then(function(authArgs /* { authToken, customer } */){
+        if (authArgs && authArgs.authToken && authArgs.customer) store.setProperties(authArgs);
         store.trigger('connect');
       });
     }
@@ -142,11 +143,9 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
       var hostname = this.get('url');
       if (this.get('protocol'))
         hostname = this.get('protocol') + '://' + hostname;
-      if (this.get("port"))
-        hostname += ':' + this.get('port');
-      else {
-        hostname += ':' + 80;
-      }
+      hostname += ':' + (this.get('port') || 80);
+      const authToken = this.get('authToken');
+      hostname += authToken ? `?authorization=${authToken}&customer=${this.get('customer')}` : '';
       this.socket = new Primus(hostname, options);
       // console.log('connection starting');
 
