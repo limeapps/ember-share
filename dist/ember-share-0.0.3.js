@@ -1,5 +1,5 @@
 (function(global) {
-define("ember-share",
+define("ember-share", 
   ["ember-share/mixins/share-text","ember-share/models/model","ember-share/store","ember-share/utils","ember-share/attr","ember-share/belongs-to","exports"],
   function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __exports__) {
     "use strict";
@@ -23,7 +23,7 @@ define("ember-share",
     __exports__.Utils = Utils;
     __exports__.attr = attr;
   });
-define("ember-share/attr",
+define("ember-share/attr", 
   ["exports"],
   function(__exports__) {
     "use strict";
@@ -84,7 +84,7 @@ define("ember-share/attr",
       }
     }
   });
-define("ember-share/belongs-to",
+define("ember-share/belongs-to", 
   ["exports"],
   function(__exports__) {
     "use strict";
@@ -119,7 +119,7 @@ define("ember-share/belongs-to",
 
     }
   });
-define("ember-share/inflector/inflections",
+define("ember-share/inflector/inflections", 
   ["exports"],
   function(__exports__) {
     "use strict";
@@ -203,7 +203,7 @@ define("ember-share/inflector/inflections",
         ]
     };
   });
-define("ember-share/inflector/inflector",
+define("ember-share/inflector/inflector", 
   ["./inflections","exports"],
   function(__dependency1__, __exports__) {
     "use strict";
@@ -523,7 +523,7 @@ define("ember-share/inflector/inflector",
 
     __exports__["default"] = Inflector.inflector;
   });
-define("ember-share/mixins/share-text",
+define("ember-share/mixins/share-text", 
   ["../utils","exports"],
   function(__dependency1__, __exports__) {
     "use strict";
@@ -560,7 +560,7 @@ define("ember-share/mixins/share-text",
           // local changes -> server
           this.textOp(key,value);
         }
-        else
+        else 
         {
           this._super(key,value);
         }
@@ -635,7 +635,7 @@ define("ember-share/mixins/share-text",
       }
     });
   });
-define("ember-share/models/base",
+define("ember-share/models/base", 
   ["./use-subs-mixin","./sub-mixin","./sub-array","./subs-handler","./utils","exports"],
   function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __exports__) {
     "use strict";
@@ -783,7 +783,7 @@ define("ember-share/models/base",
 
     __exports__["default"] = SDBBase
   });
-define("ember-share/models/model",
+define("ember-share/models/model", 
   ["./utils","./base","exports"],
   function(__dependency1__, __dependency2__, __exports__) {
     "use strict";
@@ -858,7 +858,7 @@ define("ember-share/models/model",
 
     __exports__["default"] = SDBRoot;
   });
-define("ember-share/models/sub-array",
+define("ember-share/models/sub-array", 
   ["./sub-mixin","./base","./utils","exports"],
   function(__dependency1__, __dependency2__, __dependency3__, __exports__) {
     "use strict";
@@ -1040,7 +1040,7 @@ define("ember-share/models/sub-array",
       });
     }
   });
-define("ember-share/models/sub-mixin",
+define("ember-share/models/sub-mixin", 
   ["./utils","../attr","exports"],
   function(__dependency1__, __dependency2__, __exports__) {
     "use strict";
@@ -1216,7 +1216,7 @@ define("ember-share/models/sub-mixin",
 
     })
   });
-define("ember-share/models/subs-handler",
+define("ember-share/models/subs-handler", 
   ["exports"],
   function(__exports__) {
     "use strict";
@@ -1233,7 +1233,7 @@ define("ember-share/models/subs-handler",
         array : {}
     }
   });
-define("ember-share/models/use-subs-mixin",
+define("ember-share/models/use-subs-mixin", 
   ["./subs-handler","./utils","exports"],
   function(__dependency1__, __dependency2__, __exports__) {
     "use strict";
@@ -1296,7 +1296,7 @@ define("ember-share/models/use-subs-mixin",
       }
     })
   });
-define("ember-share/models/utils",
+define("ember-share/models/utils", 
   ["exports"],
   function(__exports__) {
     "use strict";
@@ -1539,7 +1539,7 @@ define("ember-share/models/utils",
       };
     }
   });
-define("ember-share/store",
+define("ember-share/store", 
   ["./utils","./inflector/inflector","exports"],
   function(__dependency1__, __dependency2__, __exports__) {
     "use strict";
@@ -1604,6 +1604,7 @@ define("ember-share/store",
                 var checkStateRecursively = function(state) {
                   numberOfFails += 1;
                   if (numberOfFails >= MAX_NUMBER_OF_FAILS) {
+                    if (numberOfFails > MAX_NUMBER_OF_FAILS) console.log('Ember-share: connection retries to SDB over max!');
                     checkStateFail(state);
                     Ember.run.cancel(recursionID);
                   }
@@ -2065,7 +2066,7 @@ define("ember-share/store",
       }
     });
   });
-define("ember-share/utils",
+define("ember-share/utils", 
   ["exports"],
   function(__exports__) {
     "use strict";
