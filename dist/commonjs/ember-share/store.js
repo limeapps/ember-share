@@ -59,7 +59,7 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
             var numberOfFails = 0;
             var checkStateRecursively = function(state) {
               numberOfFails += 1;
-              if (numberOfFails === MAX_NUMBER_OF_FAILS) {
+              if (numberOfFails >= MAX_NUMBER_OF_FAILS) {
                 checkStateFail(state);
                 Ember.run.cancel(recursionID);
               }
