@@ -1603,6 +1603,9 @@ define("ember-share/store",
               var checkStateRecursively = function(state) {
                 numberOfFails += 1;
                 if (numberOfFails >= MAX_NUMBER_OF_FAILS) {
+                  if (numberOfFails > MAX_NUMBER_OF_FAILS) {
+                    console.log('Ember-share: connection retries to SDB over max!');
+                  }
                   checkStateFail(state);
                   Ember.run.cancel(recursionID);
                 }
