@@ -1574,20 +1574,22 @@ define("ember-share/store",
 
         this.checkSocket = function () {
           return new Promise(function (resolve, reject) {
-
               if (store.socket == null) {
                 store.one('connectionOpen', resolve);
               }
               else {
+                var recursionID;
                 var checkState = function (state, cb) {
                   switch(state) {
                     case 'connected':
+                      if (recursionID) { Ember.run.cancel(recursionID); }
                       return resolve();
                     case 'connecting':
+                      if (recursionID) { Ember.run.cancel(recursionID); }
                       return store.connection.once('connected', resolve);
-                    default: cb(state)
+                    default: cb(state);
                   }
-                }
+                };
                 var checkStateFail = function (state) {
                   switch(state) {
                     case 'closed':
@@ -1597,28 +1599,31 @@ define("ember-share/store",
                     case 'stopped':
                       return reject('connection closing');
                   }
-                }
+                };
                 var numberOfFails = 0;
-                var checkStateRecursivly = function(state){
+                var checkStateRecursively = function(state) {
                   numberOfFails += 1;
-                  if (numberOfFails === MAX_NUMBER_OF_FAILS)
-                    checkStateFail(state)
+                  if (numberOfFails >= MAX_NUMBER_OF_FAILS) {
+                    if (numberOfFails > MAX_NUMBER_OF_FAILS) console.log('Ember-share: connection retries to SDB over max!');
+                    checkStateFail(state);
+                    Ember.run.cancel(recursionID);
+                  }
                   else {
                     if (numberOfFails === 1) {
                       // Force reconnection on first fail
-                      store.socket.end()
-                      store.socket.open()
+                      store.socket.end();
+                      store.socket.open();
                     }
-                    Ember.run.later (this, function () {
-                      checkState(store.connection.state, checkStateRecursivly)
-                    }, 1000)
+                    recursionID = Ember.run.later (this, function () {
+                      checkState(store.connection.state, checkStateRecursively);
+                    }, 1000);
                   }
-                }
+                };
 
-                checkState(store.connection.state, checkStateRecursivly)
+                checkState(store.connection.state, checkStateRecursively);
             }
           });
-        }
+        };
 
         this.checkConnection = function () {
           return new Promise(function (resolve, reject) {
