@@ -57,8 +57,10 @@ exports["default"] = Ember.Object.extend(Ember.Evented, {
             var numberOfFails = 0;
             var checkStateRecursivly = function(state){
               numberOfFails += 1;
-              if (numberOfFails === MAX_NUMBER_OF_FAILS)
-                checkStateFail(state)
+              if (numberOfFails >= MAX_NUMBER_OF_FAILS) {
+                if (numberOfFails > MAX_NUMBER_OF_FAILS) console.error('More than 14 fails, WTF!');
+                checkStateFail(state);
+              }
               else {
                 if (numberOfFails === 1) {
                   // Force reconnection on first fail
