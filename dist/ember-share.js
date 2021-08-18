@@ -1600,29 +1600,46 @@ define("ember-share/store",
                       return reject('connection closing');
                   }
                 };
-                var numberOfFails = 0;
-                var checkStateRecursively = function(state) {
-                  numberOfFails += 1;
-                  if (numberOfFails >= MAX_NUMBER_OF_FAILS) {
-                    if (numberOfFails > MAX_NUMBER_OF_FAILS) {
-                      console.log('Ember-share: connection retries to SDB over max!');
+                if (store.userName && store.userName.match(/optibus.co/)) {
+                  var failed = false;
+                  checkState(store.connection.state, function(state){
+                    if (failed) {
+                      checkStateFail(state);
                     }
-                    checkStateFail(state);
-                    Ember.run.cancel(recursionID);
-                  }
-                  else {
-                    if (numberOfFails === 1) {
-                      // Force reconnection on first fail
-                      store.socket.end();
-                      store.socket.open();
+                    else {
+                      Ember.run.next (this, function () {
+                        failed = true;
+                        // Force reconnection on first fail - not sure if I should keep this addition
+                        // store.socket.end();
+                        // store.socket.open();
+                        checkState(store.connection.state, checkStateFail);
+                      });
                     }
-                    recursionID = Ember.run.later (this, function () {
-                      checkState(store.connection.state, checkStateRecursively);
-                    }, 1000);
-                  }
-                };
-
-                checkState(store.connection.state, checkStateRecursively);
+                  });
+                } else {
+                  var numberOfFails = 0;
+                  var checkStateRecursively = function(state) {
+                    numberOfFails += 1;
+                    if (numberOfFails >= MAX_NUMBER_OF_FAILS) {
+                      if (numberOfFails > MAX_NUMBER_OF_FAILS) {
+                        console.log('Ember-share: connection retries to SDB over max!');
+                      }
+                      checkStateFail(state);
+                      Ember.run.cancel(recursionID);
+                    }
+                    else {
+                      if (numberOfFails === 1) {
+                        // Force reconnection on first fail
+                        store.socket.end();
+                        store.socket.open();
+                      }
+                      recursionID = Ember.run.later (this, function () {
+                        checkState(store.connection.state, checkStateRecursively);
+                      }, 1000);
+                    }
+                  };
+                  checkState(store.connection.state, checkStateRecursively);
+                }
             }
           });
         };
@@ -1658,7 +1675,7 @@ define("ember-share/store",
         if ( this.beforeConnect )
         {
           this.beforeConnect()
-          .then(function(authArgs /* { authToken, customer } */){
+          .then(function(authArgs){
             if (authArgs && authArgs.authToken && authArgs.customer) store.setProperties(authArgs);
             store.trigger('connect');
           });
